@@ -1,10 +1,11 @@
-// lib/features/auth/login_page.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import 'auth_controller.dart';
 import '../../core/theme/app_color.dart';
 import '../../core/widgets/custom_text_field.dart';
+import '../../core/utils/responsive_helper.dart';
+import '../../core/constants/app_dimensions.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -54,109 +55,162 @@ class _LoginPageState extends State<LoginPage> {
     return Scaffold(
       backgroundColor: AppColors.primary,
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 30),
-          child: Column(
-            children: [
-              const SizedBox(height: 80),
-              Image.asset('assets/images/logo_login.png', height: 180),
-              const SizedBox(height: 30),
-              const Text(
-                "Welcome to DuoDate",
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF4E7C9F),
-                ),
+        child: Center(
+          child: Container(
+            constraints: BoxConstraints(
+              maxWidth: ResponsiveHelper.maxContentWidth(context),
+            ),
+            child: SingleChildScrollView(
+              padding: ResponsiveHelper.symmetric(
+                context: context,
+                horizontal: context.isMobile ? 8 : 12,
               ),
-              const SizedBox(height: 40),
-
-              CustomTextField(controller: _emailController, hintText: "Email"),
-
-              CustomTextField(
-                controller: _passwordController,
-                hintText: "Password",
-                isPassword: true,
-                obscureText: !authController.isPasswordVisible,
-                onToggleVisibility: authController.togglePasswordVisibility,
-              ),
-
-              const SizedBox(height: 30),
-
-              // Login Button
-              GestureDetector(
-                onTap: authController.isLoading ? null : _handleLogin,
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 15),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(30),
-                    gradient: AppColors.buttonGradient,
-                  ),
-                  child: Center(
-                    child: authController.isLoading
-                        ? const SizedBox(
-                            height: 24,
-                            width: 24,
-                            child: CircularProgressIndicator(
-                              color: Colors.white,
-                              strokeWidth: 2,
-                            ),
-                          )
-                        : const Text(
-                            "Login",
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 15),
-
-              // Navigation Links
-              Wrap(
-                alignment: WrapAlignment.center,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                spacing: 8,
+              child: Column(
                 children: [
-                  TextButton(
-                    onPressed: () => context.go('/register'),
-                    style: TextButton.styleFrom(
-                      padding: EdgeInsets.zero,
-                      minimumSize: const Size(0, 0),
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    ),
-                    child: const Text(
-                      "Create account",
-                      style: TextStyle(color: Color(0xFF6A5AE0), fontSize: 10),
+                  ResponsiveHelper.verticalSpace(
+                    context,
+                    AppDimensions.spaceXXL,
+                  ),
+                  ResponsiveHelper.verticalSpace(context, AppDimensions.spaceL),
+
+                  // Logo
+                  Image.asset(
+                    'assets/images/logo_login.png',
+                    height: context.hp(context.isMobile ? 20 : 18),
+                  ),
+
+                  ResponsiveHelper.verticalSpace(
+                    context,
+                    AppDimensions.spaceXL,
+                  ),
+
+                  // Title
+                  Text(
+                    "Welcome to DuoDate",
+                    style: TextStyle(
+                      fontSize: context.sp(AppDimensions.fontXXL),
+                      fontWeight: FontWeight.bold,
+                      color: const Color(0xFF4E7C9F),
                     ),
                   ),
-                  const Text(
-                    "|",
-                    style: TextStyle(color: Colors.grey, fontSize: 8),
+
+                  ResponsiveHelper.verticalSpace(
+                    context,
+                    AppDimensions.spaceXL,
                   ),
-                  TextButton(
-                    onPressed: () {
-                      // TODO: Navigate to forgot password page
-                    },
-                    style: TextButton.styleFrom(
-                      padding: EdgeInsets.zero,
-                      minimumSize: const Size(0, 0),
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    ),
-                    child: const Text(
-                      "Forgot password?",
-                      style: TextStyle(color: Color(0xFF6A5AE0), fontSize: 10),
+
+                  // Email Field
+                  CustomTextField(
+                    controller: _emailController,
+                    hintText: "Email",
+                  ),
+
+                  // Password Field
+                  CustomTextField(
+                    controller: _passwordController,
+                    hintText: "Password",
+                    isPassword: true,
+                    obscureText: !authController.isPasswordVisible,
+                    onToggleVisibility: authController.togglePasswordVisibility,
+                  ),
+
+                  ResponsiveHelper.verticalSpace(
+                    context,
+                    AppDimensions.spaceXL,
+                  ),
+
+                  // Login Button
+                  GestureDetector(
+                    onTap: authController.isLoading ? null : _handleLogin,
+                    child: Container(
+                      width: double.infinity,
+                      padding: EdgeInsets.symmetric(
+                        vertical: context.space(15),
+                      ),
+                      decoration: BoxDecoration(
+                        borderRadius: ResponsiveHelper.radius(
+                          context,
+                          AppDimensions.radiusXL,
+                        ),
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF6A5AE0), Color(0xFFFF598B)],
+                        ),
+                      ),
+                      child: Center(
+                        child: authController.isLoading
+                            ? SizedBox(
+                                height: context.space(24),
+                                width: context.space(24),
+                                child: const CircularProgressIndicator(
+                                  color: Colors.white,
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : Text(
+                                "Login",
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: context.sp(AppDimensions.fontL),
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                      ),
                     ),
                   ),
+
+                  ResponsiveHelper.verticalSpace(context, AppDimensions.spaceM),
+
+                  // Navigation Links
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      TextButton(
+                        onPressed: () => context.go('/register'),
+                        style: TextButton.styleFrom(
+                          padding: EdgeInsets.zero,
+                          minimumSize: const Size(0, 0),
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                        child: Text(
+                          "Create account",
+                          style: TextStyle(
+                            color: const Color(0xFF6A5AE0),
+                            fontSize: context.sp(AppDimensions.fontXS),
+                          ),
+                        ),
+                      ),
+                      SizedBox(width: context.space(8)),
+                      Text(
+                        "|",
+                        style: TextStyle(
+                          color: Colors.grey,
+                          fontSize: context.sp(AppDimensions.fontXS),
+                        ),
+                      ),
+                      SizedBox(width: context.space(8)),
+                      TextButton(
+                        onPressed: () {
+                          // TODO: Navigate to forgot password page
+                        },
+                        style: TextButton.styleFrom(
+                          padding: EdgeInsets.zero,
+                          minimumSize: const Size(0, 0),
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                        child: Text(
+                          "Forgot password?",
+                          style: TextStyle(
+                            color: const Color(0xFF6A5AE0),
+                            fontSize: context.sp(AppDimensions.fontXS),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  ResponsiveHelper.verticalSpace(context, AppDimensions.spaceL),
                 ],
               ),
-              const SizedBox(height: 20),
-            ],
+            ),
           ),
         ),
       ),

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../utils/responsive_helper.dart';
+import '../constants/app_dimensions.dart';
 
 class CustomTextField extends StatelessWidget {
   final TextEditingController controller;
@@ -19,10 +21,12 @@ class CustomTextField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.symmetric(vertical: 8),
+      margin: EdgeInsets.symmetric(
+        vertical: context.space(AppDimensions.spaceS),
+      ),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(30),
+        borderRadius: ResponsiveHelper.radius(context, AppDimensions.radiusXL),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
@@ -34,18 +38,23 @@ class CustomTextField extends StatelessWidget {
       child: TextField(
         controller: controller,
         obscureText: obscureText ?? false,
+        style: TextStyle(fontSize: context.sp(AppDimensions.fontM)),
         decoration: InputDecoration(
           hintText: hintText,
-          hintStyle: const TextStyle(color: Colors.grey),
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 25,
-            vertical: 15,
+          hintStyle: TextStyle(
+            color: Colors.grey,
+            fontSize: context.sp(AppDimensions.fontM),
+          ),
+          contentPadding: EdgeInsets.symmetric(
+            horizontal: context.space(25),
+            vertical: context.space(15),
           ),
           border: InputBorder.none,
           suffixIcon: isPassword
               ? IconButton(
                   icon: Icon(
                     obscureText! ? Icons.visibility_off : Icons.visibility,
+                    size: context.space(AppDimensions.iconM),
                   ),
                   onPressed: onToggleVisibility,
                 )
