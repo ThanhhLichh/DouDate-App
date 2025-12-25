@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'features/auth/auth_controller.dart';
+import 'features/home/home_controller.dart';
 import '../core/services/storage_service.dart';
 import 'routes/app_router.dart';
 
@@ -14,7 +15,10 @@ void main() async {
 
   runApp(
     MultiProvider(
-      providers: [ChangeNotifierProvider(create: (_) => AuthController())],
+      providers: [
+        ChangeNotifierProvider(create: (_) => AuthController()),
+        ChangeNotifierProvider(create: (_) => HomeController()),
+      ],
       // Truyền token vào để xử lý router ban đầu
       child: MyApp(isLoggedIn: token != null),
     ),

@@ -24,6 +24,7 @@ class AppDimensions {
   static const double radiusCircle = 999.0;
 
   // Font Sizes
+  static const double fontXXS = 10.0;
   static const double fontXS = 12.0;
   static const double fontS = 14.0;
   static const double fontM = 16.0;
