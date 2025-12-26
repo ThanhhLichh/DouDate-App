@@ -1,6 +1,6 @@
 from datetime import date, datetime
 from pydantic import BaseModel, EmailStr
-
+from typing import Optional
 
 class UserBase(BaseModel):
     email: EmailStr
@@ -30,4 +30,23 @@ class UserPublic(BaseModel):
     id: int
     full_name: str
     avatar_url: str | None
+
+
+class UserProfileResponse(BaseModel):
+    id: int
+    full_name: str
+    avatar_url: Optional[str] = None
+    birth_date: Optional[date] = None
+    bio: Optional[str] = None
+
+    model_config = {
+        "from_attributes": True
+    }
+
+
+class UserProfileUpdate(BaseModel):
+    full_name: Optional[str] = None
+    avatar_url: Optional[str] = None
+    birth_date: Optional[date] = None
+    bio: Optional[str] = None
 
