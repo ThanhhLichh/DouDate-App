@@ -25,3 +25,9 @@ class UserResponse(UserBase):
     model_config = {
         "from_attributes": True
     }
+
+class UserPublic(BaseModel):
+    id: int
+    full_name: str
+    avatar_url: str | None
+

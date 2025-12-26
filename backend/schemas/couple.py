@@ -17,3 +17,9 @@ class CoupleInfo(BaseModel):
 class CoupleMeResponse(BaseModel):
     has_couple: bool
     couple: Optional[CoupleInfo] = None
+
+class CoupleStatsResponse(BaseModel):
+    message_count: int
+    moment_count: int
+    memory_count: int
+

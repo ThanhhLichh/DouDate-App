@@ -11,6 +11,11 @@ from core.security import get_current_user_id
 
 from models.couple import Couple
 from schemas.couple import CoupleMeResponse, CoupleInfo
+from models.message import Message
+from models.moment import Moment
+from models.memory import Memory
+from schemas.couple import CoupleStatsResponse
+
 
 
 
@@ -49,3 +54,55 @@ def get_my_couple(
         "has_couple": True,
         "couple": couple,
     }
+
+@router.get(
+    "/stats",
+    response_model=CoupleStatsResponse,
+)
+def get_couple_stats(
+    db: Session = Depends(get_db),
+    user_id: int = Depends(get_current_user_id),
+):
+    # tìm couple của user
+    couple = (
+        db.query(Couple)
+        .filter(
+            or_(
+                Couple.user1_id == user_id,
+                Couple.user2_id == user_id,
+            ),
+            Couple.end_date.is_(None),
+        )
+        .first()
+    )
+
+    if not couple:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User has no active couple",
+        )
+
+    message_count = (
+        db.query(Message)
+        .filter(Message.couple_id == couple.id)
+        .count()
+    )
+
+    moment_count = (
+        db.query(Moment)
+        .filter(Moment.couple_id == couple.id)
+        .count()
+    )
+
+    memory_count = (
+        db.query(Memory)
+        .filter(Memory.couple_id == couple.id)
+        .count()
+    )
+
+    return {
+        "message_count": message_count,
+        "moment_count": moment_count,
+        "memory_count": memory_count,
+    }
+
