@@ -46,6 +46,7 @@ dependencies:
   
   # Local Storage (Lưu token)
   shared_preferences: ^2.5.2
+  path_provider: ^2.1.5
   
   # UI Helpers
   flutter_svg: ^2.2.2
@@ -54,6 +55,16 @@ dependencies:
 
   flutter_secure_storage: ^9.2.4
   http: ^1.6.0
+
+  # Image Processing
+  image_picker: ^1.2.0
+  image: ^4.5.4
+
+  # Color Picker
+  flutter_colorpicker: ^1.1.0
+
+  # Utilities
+  path: ^1.9.1
 
 dev_dependencies:
   flutter_test:

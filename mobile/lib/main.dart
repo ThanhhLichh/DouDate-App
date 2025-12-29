@@ -1,25 +1,51 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+// Core
+import 'core/providers/dashboard_theme_provider.dart';
+import 'core/services/theme_storage_service.dart';
+import 'core/services/image_storage_service.dart';
+import 'core/services/storage_service.dart';
+
+// Features
 import 'features/auth/auth_controller.dart';
 import 'features/home/home_controller.dart';
-import '../core/services/storage_service.dart';
+
+// Router
 import 'routes/app_router.dart';
 
-void main() async {
-  // Đảm bảo Flutter đã khởi tạo xong các plugin (như secure storage)
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Kiểm tra token xem đã đăng nhập chưa
+  // Check login token
   final storageService = StorageService();
   final String? token = await storageService.getToken();
+
+  // Init SharedPreferences
+  final prefs = await SharedPreferences.getInstance();
+
+  // Init services
+  final themeStorageService = ThemeStorageService(prefs);
+  final imageStorageService = ImageStorageService();
 
   runApp(
     MultiProvider(
       providers: [
+        // Auth
         ChangeNotifierProvider(create: (_) => AuthController()),
+
+        // Home
         ChangeNotifierProvider(create: (_) => HomeController()),
+
+        // Theme
+        ChangeNotifierProvider(
+          create: (_) => DashboardThemeProvider(
+            storageService: themeStorageService,
+            imageService: imageStorageService,
+          ),
+        ),
       ],
-      // Truyền token vào để xử lý router ban đầu
       child: MyApp(isLoggedIn: token != null),
     ),
   );
@@ -27,15 +53,34 @@ void main() async {
 
 class MyApp extends StatelessWidget {
   final bool isLoggedIn;
+
   const MyApp({super.key, required this.isLoggedIn});
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp.router(
-      debugShowCheckedModeBanner: false,
-      title: 'DuoDate',
-      // Bạn có thể tùy chỉnh initialLocation trong AppRouter dựa trên isLoggedIn
-      routerConfig: AppRouter.router,
+    return Consumer<DashboardThemeProvider>(
+      builder: (context, themeProvider, _) {
+        final theme = themeProvider.currentTheme;
+
+        return MaterialApp.router(
+          debugShowCheckedModeBanner: false,
+          title: 'DuoDate',
+
+          // Theme
+          theme: ThemeData(
+            useMaterial3: true,
+            primaryColor: theme.primaryColor,
+            colorScheme: ColorScheme.fromSeed(
+              seedColor: theme.primaryColor,
+              primary: theme.primaryColor,
+              secondary: theme.accentColor,
+            ),
+          ),
+
+          // Router (có thể dùng isLoggedIn bên trong AppRouter)
+          routerConfig: AppRouter.router,
+        );
+      },
     );
   }
 }

@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'home_controller.dart';
@@ -5,6 +6,9 @@ import 'widgets/home_skeleton.dart';
 import '../../core/theme/app_color.dart';
 import '../../core/utils/responsive_helper.dart';
 import '../../core/constants/app_dimensions.dart';
+import '../../core/providers/dashboard_theme_provider.dart';
+import '../../core/theme/theme_constants.dart';
+import '../settings/theme_settings_page.dart';
 import './models/home_models.dart';
 
 class HomePage extends StatefulWidget {
@@ -32,12 +36,25 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     final controller = context.watch<HomeController>();
+    final themeProvider = context.watch<DashboardThemeProvider>();
+    final theme = themeProvider.currentTheme;
     final data = controller.dashboardData;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FE),
-      body: SafeArea(child: _buildBody(context, controller, data)),
-      bottomNavigationBar: _buildBottomNav(context),
+      backgroundColor: theme.primaryColor,
+      body: SafeArea(child: _buildBody(context, controller, data, theme)),
+      bottomNavigationBar: _buildBottomNav(context, theme),
+
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => ThemeSettingsPage()),
+          );
+        },
+        child: Icon(Icons.palette),
+        tooltip: 'Customize Theme',
+      ),
     );
   }
 
@@ -45,6 +62,7 @@ class _HomePageState extends State<HomePage> {
     BuildContext context,
     HomeController controller,
     CoupleDashboard? data,
+    theme,
   ) {
     // Loading state with skeleton
     if (controller.isLoading || data == null) {
@@ -53,13 +71,13 @@ class _HomePageState extends State<HomePage> {
 
     // Error state
     if (controller.errorMessage != null) {
-      return _buildErrorState(context, controller);
+      return _buildErrorState(context, controller, theme);
     }
 
     // Success state with data
     return RefreshIndicator(
       onRefresh: _handleRefresh,
-      color: AppColors.primary,
+      color: theme.primaryColor,
       child: Center(
         child: Container(
           constraints: BoxConstraints(
@@ -77,22 +95,22 @@ class _HomePageState extends State<HomePage> {
                 ResponsiveHelper.verticalSpace(context, AppDimensions.spaceM),
 
                 // Header
-                _buildHeader(context),
+                _buildHeader(context, theme),
 
                 ResponsiveHelper.verticalSpace(context, AppDimensions.spaceXL),
 
                 // Couple Card
-                _buildCoupleCard(context, data),
+                _buildCoupleCard(context, data, theme),
 
                 ResponsiveHelper.verticalSpace(context, AppDimensions.spaceL),
 
                 // Daily Quote
-                _buildQuoteCard(context, data.todayQuote),
+                _buildQuoteCard(context, data.todayQuote, theme),
 
                 ResponsiveHelper.verticalSpace(context, AppDimensions.spaceL),
 
                 // Stats Grid
-                _buildStatsGrid(context, data),
+                _buildStatsGrid(context, data, theme),
 
                 ResponsiveHelper.verticalSpace(context, AppDimensions.spaceL),
               ],
@@ -103,7 +121,11 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildErrorState(BuildContext context, HomeController controller) {
+  Widget _buildErrorState(
+    BuildContext context,
+    HomeController controller,
+    theme,
+  ) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -118,14 +140,14 @@ class _HomePageState extends State<HomePage> {
             controller.errorMessage!,
             style: TextStyle(
               fontSize: context.sp(AppDimensions.fontM),
-              color: Colors.grey,
+              color: theme.textSecondaryColor,
             ),
           ),
           ResponsiveHelper.verticalSpace(context, AppDimensions.spaceL),
           ElevatedButton(
             onPressed: () => controller.fetchDashboardData(),
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
+              backgroundColor: theme.primaryColor,
               padding: EdgeInsets.symmetric(
                 horizontal: context.space(30),
                 vertical: context.space(15),
@@ -141,7 +163,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildHeader(BuildContext context) {
+  Widget _buildHeader(BuildContext context, theme) {
     return Column(
       children: [
         Text(
@@ -149,13 +171,13 @@ class _HomePageState extends State<HomePage> {
           style: TextStyle(
             fontSize: context.sp(AppDimensions.fontXXL),
             fontWeight: FontWeight.bold,
-            color: const Color(0xFF4E4E7C),
+            color: theme.accentColor,
           ),
         ),
         Text(
           "Your love journey together",
           style: TextStyle(
-            color: Colors.grey,
+            color: theme.textSecondaryColor,
             fontSize: context.sp(AppDimensions.fontS),
           ),
         ),
@@ -163,71 +185,98 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildCoupleCard(BuildContext context, CoupleDashboard data) {
-    return Container(
-      padding: EdgeInsets.symmetric(
-        vertical: context.space(30),
-        horizontal: context.space(20),
-      ),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: ResponsiveHelper.radius(context, AppDimensions.radiusXL),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 20,
-            offset: const Offset(0, 5),
+  Widget _buildCoupleCard(BuildContext context, CoupleDashboard data, theme) {
+    return FutureBuilder<File?>(
+      future: context.read<DashboardThemeProvider>().getCoupleBackgroundImage(),
+      builder: (context, snapshot) {
+        final hasCustomBackground = snapshot.hasData && snapshot.data != null;
+
+        return Container(
+          padding: EdgeInsets.symmetric(
+            vertical: context.space(30),
+            horizontal: context.space(20),
           ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              _buildAvatar(context, data.partnerAvatar, AppColors.primary),
-              Icon(
-                Icons.favorite,
-                color: Colors.pinkAccent,
-                size: context.space(AppDimensions.iconXL),
+          decoration: BoxDecoration(
+            image: hasCustomBackground
+                ? DecorationImage(
+                    image: FileImage(snapshot.data!),
+                    fit: BoxFit.cover,
+                    opacity: 0.95,
+                  )
+                : const DecorationImage(
+                    image: AssetImage(ThemeConstants.defaultCoupleBackground),
+                    fit: BoxFit.cover,
+                    opacity: 0.95,
+                  ),
+            borderRadius: ResponsiveHelper.radius(
+              context,
+              AppDimensions.radiusXL,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.05),
+                blurRadius: 20,
+                offset: const Offset(0, 5),
               ),
-              _buildAvatar(context, data.yourAvatar, Colors.blueAccent),
             ],
           ),
-          ResponsiveHelper.verticalSpace(context, AppDimensions.spaceM),
-          Text(
-            "${data.partnerName} & ${data.yourName}",
-            style: TextStyle(
-              fontSize: context.sp(AppDimensions.fontL),
-              fontWeight: FontWeight.w600,
-            ),
+          child: Column(
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  _buildAvatar(
+                    context,
+                    data.partnerAvatar,
+                    theme.partnerBorderColor,
+                  ),
+                  Icon(
+                    Icons.favorite,
+                    color: theme.heartIconColor,
+                    size: context.space(AppDimensions.iconXL),
+                  ),
+                  _buildAvatar(context, data.yourAvatar, theme.yourBorderColor),
+                ],
+              ),
+              ResponsiveHelper.verticalSpace(context, AppDimensions.spaceM),
+              Text(
+                "${data.partnerName}      &      ${data.yourName}",
+                style: TextStyle(
+                  color: theme.textPrimaryColor,
+                  fontSize: context.sp(AppDimensions.fontL),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              ResponsiveHelper.verticalSpace(context, AppDimensions.spaceL),
+              Text(
+                "Together for",
+                style: TextStyle(
+                  color: theme.textPrimaryColor,
+                  fontWeight: FontWeight.bold,
+                  fontSize: context.sp(AppDimensions.fontS),
+                ),
+              ),
+              ResponsiveHelper.verticalSpace(context, AppDimensions.spaceXS),
+              Text(
+                "${data.daysTogether}",
+                style: TextStyle(
+                  fontSize: context.sp(48),
+                  fontWeight: FontWeight.bold,
+                  color: theme.textPrimaryColor,
+                ),
+              ),
+              Text(
+                "beautiful days",
+                style: TextStyle(
+                  color: theme.textPrimaryColor,
+                  fontWeight: FontWeight.bold,
+                  fontSize: context.sp(AppDimensions.fontS),
+                ),
+              ),
+            ],
           ),
-          ResponsiveHelper.verticalSpace(context, AppDimensions.spaceL),
-          Text(
-            "Together for",
-            style: TextStyle(
-              color: Colors.grey,
-              fontSize: context.sp(AppDimensions.fontS),
-            ),
-          ),
-          ResponsiveHelper.verticalSpace(context, AppDimensions.spaceXS),
-          Text(
-            "${data.daysTogether}",
-            style: TextStyle(
-              fontSize: context.sp(48),
-              fontWeight: FontWeight.bold,
-              color: const Color(0xFF4E4E7C),
-            ),
-          ),
-          Text(
-            "beautiful days",
-            style: TextStyle(
-              color: Colors.grey,
-              fontSize: context.sp(AppDimensions.fontS),
-            ),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -240,12 +289,12 @@ class _HomePageState extends State<HomePage> {
       ),
       child: CircleAvatar(
         radius: context.space(40),
-        backgroundImage: const AssetImage('assets/images/logo_login.png'),
+        backgroundImage: const AssetImage(ThemeConstants.defaultAvatar),
       ),
     );
   }
 
-  Widget _buildStatsGrid(BuildContext context, CoupleDashboard data) {
+  Widget _buildStatsGrid(BuildContext context, CoupleDashboard data, theme) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -255,6 +304,7 @@ class _HomePageState extends State<HomePage> {
             "Chat",
             "${data.messageCount / 1000}k",
             Icons.chat_bubble_outline,
+            theme,
           ),
         ),
         ResponsiveHelper.horizontalSpace(context, AppDimensions.spaceM),
@@ -264,6 +314,7 @@ class _HomePageState extends State<HomePage> {
             "Moments",
             "${data.momentCount}",
             Icons.camera_alt_outlined,
+            theme,
           ),
         ),
         ResponsiveHelper.horizontalSpace(context, AppDimensions.spaceM),
@@ -273,6 +324,7 @@ class _HomePageState extends State<HomePage> {
             "Memories",
             "${data.memoryCount}",
             Icons.star_outline,
+            theme,
           ),
         ),
       ],
@@ -284,15 +336,16 @@ class _HomePageState extends State<HomePage> {
     String title,
     String value,
     IconData icon,
+    theme,
   ) {
     return Container(
       padding: EdgeInsets.all(context.space(15)),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.cardBackground,
         borderRadius: ResponsiveHelper.radius(context, AppDimensions.radiusL),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: Colors.black.withValues(alpha: 0.03),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -302,7 +355,7 @@ class _HomePageState extends State<HomePage> {
         children: [
           Icon(
             icon,
-            color: Colors.grey,
+            color: theme.textSecondaryColor,
             size: context.space(AppDimensions.iconL),
           ),
           ResponsiveHelper.verticalSpace(context, AppDimensions.spaceS),
@@ -311,13 +364,14 @@ class _HomePageState extends State<HomePage> {
             style: TextStyle(
               fontSize: context.sp(AppDimensions.fontL),
               fontWeight: FontWeight.bold,
+              color: theme.textPrimaryColor,
             ),
           ),
           Text(
             title,
             style: TextStyle(
               fontSize: context.sp(AppDimensions.fontXXS),
-              color: Colors.grey,
+              color: theme.textSecondaryColor,
             ),
           ),
         ],
@@ -325,11 +379,11 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildQuoteCard(BuildContext context, String quote) {
+  Widget _buildQuoteCard(BuildContext context, String quote, theme) {
     return Container(
       padding: EdgeInsets.all(context.space(20)),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.cardBackground,
         borderRadius: ResponsiveHelper.radius(context, AppDimensions.radiusL),
         boxShadow: [
           BoxShadow(
@@ -343,7 +397,7 @@ class _HomePageState extends State<HomePage> {
         children: [
           Icon(
             Icons.auto_awesome,
-            color: Colors.purpleAccent,
+            color: theme.heartIconColor,
             size: context.space(AppDimensions.iconL),
           ),
           ResponsiveHelper.horizontalSpace(context, AppDimensions.spaceM),
@@ -354,7 +408,7 @@ class _HomePageState extends State<HomePage> {
                 Text(
                   "Today's Quote",
                   style: TextStyle(
-                    color: Colors.grey,
+                    color: theme.textSecondaryColor,
                     fontSize: context.sp(AppDimensions.fontXS),
                   ),
                 ),
@@ -364,6 +418,7 @@ class _HomePageState extends State<HomePage> {
                   style: TextStyle(
                     fontStyle: FontStyle.italic,
                     fontSize: context.sp(AppDimensions.fontS),
+                    color: theme.textPrimaryColor,
                   ),
                 ),
               ],
@@ -374,17 +429,21 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildBottomNav(BuildContext context) {
+  Widget _buildBottomNav(BuildContext context, theme) {
     return BottomNavigationBar(
       currentIndex: _selectedIndex,
       onTap: (index) {
+        if (index == 0) {
+          context.read<HomeController>().fetchDashboardData();
+        }
+
         setState(() {
           _selectedIndex = index;
         });
       },
       type: BottomNavigationBarType.fixed,
-      selectedItemColor: AppColors.primary,
-      unselectedItemColor: Colors.grey,
+      selectedItemColor: theme.primaryColor,
+      unselectedItemColor: theme.textSecondaryColor,
       selectedFontSize: context.sp(AppDimensions.fontXS),
       unselectedFontSize: context.sp(AppDimensions.fontXXS),
       iconSize: context.space(AppDimensions.iconM),
