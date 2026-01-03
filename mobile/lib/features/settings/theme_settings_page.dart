@@ -6,7 +6,7 @@ import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import '../../core/providers/dashboard_theme_provider.dart';
 import '../../core/theme/theme_presets.dart';
 import '../../core/theme/dashboard_theme.dart';
-import '../../core/utils/color_validator.dart';
+// import '../../core/utils/color_validator.dart';
 
 class ThemeSettingsPage extends StatefulWidget {
   const ThemeSettingsPage({super.key});

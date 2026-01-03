@@ -108,56 +108,56 @@ class DashboardThemeProvider extends ChangeNotifier {
           updatedTheme = _currentTheme.copyWith(
             primaryColor: value,
             isCustom: true,
-            name: '${_currentTheme.name} (Custom)',
+            name: _currentTheme.name,
           );
           break;
         case 'accentColor':
           updatedTheme = _currentTheme.copyWith(
             accentColor: value,
             isCustom: true,
-            name: '${_currentTheme.name} (Custom)',
+            name: _currentTheme.name,
           );
           break;
         case 'cardBackground':
           updatedTheme = _currentTheme.copyWith(
             cardBackground: value,
             isCustom: true,
-            name: '${_currentTheme.name} (Custom)',
+            name: _currentTheme.name,
           );
           break;
         case 'heartIconColor':
           updatedTheme = _currentTheme.copyWith(
             heartIconColor: value,
             isCustom: true,
-            name: '${_currentTheme.name} (Custom)',
+            name: _currentTheme.name,
           );
           break;
         case 'partnerBorderColor':
           updatedTheme = _currentTheme.copyWith(
             partnerBorderColor: value,
             isCustom: true,
-            name: '${_currentTheme.name} (Custom)',
+            name: _currentTheme.name,
           );
           break;
         case 'yourBorderColor':
           updatedTheme = _currentTheme.copyWith(
             yourBorderColor: value,
             isCustom: true,
-            name: '${_currentTheme.name} (Custom)',
+            name: _currentTheme.name,
           );
           break;
         case 'textPrimaryColor':
           updatedTheme = _currentTheme.copyWith(
             textPrimaryColor: value,
             isCustom: true,
-            name: '${_currentTheme.name} (Custom)',
+            name: _currentTheme.name,
           );
           break;
         case 'textSecondaryColor':
           updatedTheme = _currentTheme.copyWith(
             textSecondaryColor: value,
             isCustom: true,
-            name: '${_currentTheme.name} (Custom)',
+            name: _currentTheme.name,
           );
           break;
         default:
@@ -210,7 +210,7 @@ class DashboardThemeProvider extends ChangeNotifier {
       final updatedTheme = _currentTheme.copyWith(
         coupleBackgroundPath: imagePath,
         isCustom: true,
-        name: '${_currentTheme.name} (Custom)',
+        name: _currentTheme.name,
       );
 
       _currentTheme = updatedTheme;
