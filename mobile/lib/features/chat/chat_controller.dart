@@ -171,23 +171,12 @@ class ChatController extends ChangeNotifier {
   Future<void> loadSettings() async {
     if (_conversation == null) return;
 
-    // Always load from local storage first
+    // Load from local storage first
     await _loadSettingsFromStorage();
 
-    // Optionally sync with backend
-    try {
-      final response = await _repository.getConversationSettings(
-        _conversation!.id,
-      );
-
-      if (response.success && response.data != null) {
-        _settings = response.data;
-        await _saveSettingsToStorage();
-        notifyListeners();
-      }
-    } catch (e) {
-      // Silent fail, keep local settings
-    }
+    // DON'T sync with backend on every load
+    // Backend sync only happens when user explicitly updates settings
+    // This prevents overwriting local changes with stale backend data
   }
 
   // Update bubble color

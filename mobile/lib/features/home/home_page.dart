@@ -13,6 +13,7 @@ import '../../core/providers/dashboard_theme_provider.dart';
 import '../settings/theme_settings_page.dart';
 import './models/home_models.dart';
 import '../chat/chat_page.dart';
+import '../memory/memories_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -47,16 +48,18 @@ class _HomePageState extends State<HomePage> {
       backgroundColor: theme.primaryColor,
       body: SafeArea(child: _buildBody(context, controller, data, theme)),
       bottomNavigationBar: _buildBottomNav(context, theme),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => ThemeSettingsPage()),
-          );
-        },
-        child: Icon(Icons.palette),
-        tooltip: 'Customize Theme',
-      ),
+      floatingActionButton: _selectedIndex != 3
+          ? FloatingActionButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => ThemeSettingsPage()),
+                );
+              },
+              tooltip: 'Customize Theme',
+              child: Icon(Icons.palette),
+            )
+          : null,
     );
   }
 
@@ -66,6 +69,10 @@ class _HomePageState extends State<HomePage> {
     CoupleDashboard? data,
     theme,
   ) {
+    if (_selectedIndex == 3) {
+      return const MemoriesPage();
+    }
+
     // Loading state with skeleton
     if (controller.isLoading || data == null) {
       return const HomePageSkeleton();
@@ -133,6 +140,9 @@ class _HomePageState extends State<HomePage> {
       onTap: (index) {
         if (index == 0) {
           context.read<HomeController>().fetchDashboardData();
+          setState(() {
+            _selectedIndex = 0;
+          });
         } else if (index == 1) {
           // Navigate to Chat (direct to chat room, no list)
           Navigator.push(
@@ -140,11 +150,17 @@ class _HomePageState extends State<HomePage> {
             MaterialPageRoute(builder: (context) => const ChatPage()),
           );
           return; // Don't update selected index
+        } else if (index == 3) {
+          // Memories - switch tab (giữ bottom nav)
+          setState(() {
+            _selectedIndex = 3;
+          });
+        } else {
+          // Other tabs
+          setState(() {
+            _selectedIndex = index;
+          });
         }
-
-        setState(() {
-          _selectedIndex = index;
-        });
       },
       type: BottomNavigationBarType.fixed,
       selectedItemColor: theme.primaryColor,
@@ -154,7 +170,7 @@ class _HomePageState extends State<HomePage> {
       iconSize: context.space(AppDimensions.iconM),
       items: const [
         BottomNavigationBarItem(icon: Icon(Icons.home), label: "Home"),
-        BottomNavigationBarItem(icon: Icon(Icons.chat), label: "Chat"), //
+        BottomNavigationBarItem(icon: Icon(Icons.chat), label: "Chat"),
         BottomNavigationBarItem(
           icon: Icon(Icons.photo_library),
           label: "Moments",

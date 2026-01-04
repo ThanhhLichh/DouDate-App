@@ -12,6 +12,7 @@ import 'core/services/storage_service.dart';
 import 'features/auth/auth_controller.dart';
 import 'features/home/home_controller.dart';
 import 'features/chat/chat_controller.dart';
+import 'features/memory/memory_controller.dart';
 
 // Router
 import 'routes/app_router.dart';
@@ -41,6 +42,9 @@ Future<void> main() async {
 
         // Chat
         ChangeNotifierProvider(create: (_) => ChatController()),
+
+        // Memory
+        ChangeNotifierProvider(create: (_) => MemoryController()),
 
         // Theme
         ChangeNotifierProvider(
