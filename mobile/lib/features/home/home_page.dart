@@ -12,6 +12,7 @@ import '../../core/constants/app_dimensions.dart';
 import '../../core/providers/dashboard_theme_provider.dart';
 import '../settings/theme_settings_page.dart';
 import './models/home_models.dart';
+import '../chat/chat_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -132,6 +133,13 @@ class _HomePageState extends State<HomePage> {
       onTap: (index) {
         if (index == 0) {
           context.read<HomeController>().fetchDashboardData();
+        } else if (index == 1) {
+          // Navigate to Chat (direct to chat room, no list)
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const ChatPage()),
+          );
+          return; // Don't update selected index
         }
 
         setState(() {
@@ -146,7 +154,7 @@ class _HomePageState extends State<HomePage> {
       iconSize: context.space(AppDimensions.iconM),
       items: const [
         BottomNavigationBarItem(icon: Icon(Icons.home), label: "Home"),
-        BottomNavigationBarItem(icon: Icon(Icons.chat), label: "Chat"),
+        BottomNavigationBarItem(icon: Icon(Icons.chat), label: "Chat"), //
         BottomNavigationBarItem(
           icon: Icon(Icons.photo_library),
           label: "Moments",

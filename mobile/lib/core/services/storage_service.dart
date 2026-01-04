@@ -8,6 +8,7 @@ class StorageService {
   static const _accessTokenKey = 'access_token';
   static const _refreshTokenKey = 'refresh_token';
   static const _userKey = 'user_data';
+  static const _conversationSettingsKey = 'conversation_settings';
 
   // Access Token
   Future<void> saveToken(String token) async {
@@ -51,6 +52,24 @@ class StorageService {
 
   Future<void> deleteUser() async {
     await _storage.delete(key: _userKey);
+  }
+
+  // Conversation Settings
+  Future<void> saveConversationSettings(Map<String, dynamic> settings) async {
+    final settingsJson = jsonEncode(settings);
+    await _storage.write(key: _conversationSettingsKey, value: settingsJson);
+  }
+
+  Future<Map<String, dynamic>?> getConversationSettings() async {
+    final settingsJson = await _storage.read(key: _conversationSettingsKey);
+    if (settingsJson != null) {
+      return jsonDecode(settingsJson);
+    }
+    return null;
+  }
+
+  Future<void> deleteConversationSettings() async {
+    await _storage.delete(key: _conversationSettingsKey);
   }
 
   // Clear all data
