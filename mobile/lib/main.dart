@@ -13,6 +13,7 @@ import 'features/auth/auth_controller.dart';
 import 'features/home/home_controller.dart';
 import 'features/chat/chat_controller.dart';
 import 'features/memory/memory_controller.dart';
+import 'features/profile/settings_controller.dart';
 
 // Router
 import 'routes/app_router.dart';
@@ -45,6 +46,9 @@ Future<void> main() async {
 
         // Memory
         ChangeNotifierProvider(create: (_) => MemoryController()),
+
+        // Settings
+        ChangeNotifierProvider(create: (_) => SettingsController()),
 
         // Theme
         ChangeNotifierProvider(

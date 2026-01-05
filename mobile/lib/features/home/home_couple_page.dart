@@ -14,15 +14,16 @@ import '../settings/theme_settings_page.dart';
 import './models/home_models.dart';
 import '../chat/chat_page.dart';
 import '../memory/memories_page.dart';
+import '../profile/settings_page.dart';
 
-class HomePage extends StatefulWidget {
-  const HomePage({super.key});
+class HomeSinglePage extends StatefulWidget {
+  const HomeSinglePage({super.key});
 
   @override
-  State<HomePage> createState() => _HomePageState();
+  State<HomeSinglePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _HomePageState extends State<HomeSinglePage> {
   int _selectedIndex = 0;
 
   @override
@@ -71,6 +72,8 @@ class _HomePageState extends State<HomePage> {
   ) {
     if (_selectedIndex == 3) {
       return const MemoriesPage();
+    } else if (_selectedIndex == 4) {
+      return const SettingsPage();
     }
 
     // Loading state with skeleton
@@ -154,6 +157,11 @@ class _HomePageState extends State<HomePage> {
           // Memories - switch tab (giữ bottom nav)
           setState(() {
             _selectedIndex = 3;
+          });
+        } else if (index == 4) {
+          // Settings - switch tab (giữ bottom nav)
+          setState(() {
+            _selectedIndex = 4;
           });
         } else {
           // Other tabs
