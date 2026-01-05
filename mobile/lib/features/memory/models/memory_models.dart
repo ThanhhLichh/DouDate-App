@@ -5,7 +5,6 @@ class Memory {
   final String description;
   final String imageUrl;
   final DateTime createdAt;
-  final List<String>? tags;
 
   Memory({
     required this.id,
@@ -14,7 +13,6 @@ class Memory {
     required this.description,
     required this.imageUrl,
     required this.createdAt,
-    this.tags,
   });
 
   factory Memory.fromJson(Map<String, dynamic> json) {
@@ -25,7 +23,6 @@ class Memory {
       description: json['description'] ?? '',
       imageUrl: json['image_url'] ?? json['imageUrl'] ?? '',
       createdAt: DateTime.parse(json['created_at'] ?? json['createdAt']),
-      tags: json['tags'] != null ? List<String>.from(json['tags']) : null,
     );
   }
 
@@ -36,7 +33,6 @@ class Memory {
     'description': description,
     'image_url': imageUrl,
     'created_at': createdAt.toIso8601String(),
-    if (tags != null) 'tags': tags,
   };
 }
 
@@ -44,20 +40,17 @@ class CreateMemoryRequest {
   final String title;
   final String description;
   final String imageBase64;
-  final List<String>? tags;
 
   CreateMemoryRequest({
     required this.title,
     required this.description,
     required this.imageBase64,
-    this.tags,
   });
 
   Map<String, dynamic> toJson() => {
     'title': title,
     'description': description,
     'image_base64': imageBase64,
-    if (tags != null) 'tags': tags,
   };
 }
 

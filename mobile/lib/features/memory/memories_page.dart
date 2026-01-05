@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'memory_controller.dart';
+import 'models/memory_models.dart';
 import 'widgets/memory_card_widget.dart';
 import 'widgets/memory_empty_state.dart';
+import 'widgets/memory_skeleton.dart';
 import 'widgets/create_memory_modal.dart';
 import 'widgets/all_photos_view.dart';
+import 'widgets/memory_detail_view.dart';
+import 'widgets/anniversary_memories_view.dart';
 import '../../core/theme/app_color.dart';
 import '../../core/utils/responsive_helper.dart';
 import '../../core/constants/app_dimensions.dart';
@@ -35,37 +39,78 @@ class _MemoriesPageState extends State<MemoriesPage> {
     }
   }
 
-  void _showMemoryReminder(List<dynamic> memories) {
+  void _showMemoryReminder(List<Memory> memories) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Row(
           children: [
-            Icon(Icons.celebration, color: AppColors.primary),
+            Icon(Icons.celebration, color: AppColors.primary, size: 20),
             SizedBox(width: context.space(8)),
-            Text(
-              'Memory Anniversary!',
-              style: TextStyle(fontSize: context.sp(AppDimensions.fontM)),
+            Expanded(
+              child: Text(
+                'Memory Anniversary!',
+                style: TextStyle(fontSize: context.sp(AppDimensions.fontM)),
+              ),
             ),
           ],
         ),
-        content: Text(
-          'You have ${memories.length} memory anniversar${memories.length > 1 ? "ies" : "y"} today! 🎉',
-          style: TextStyle(fontSize: context.sp(AppDimensions.fontM)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Today marks ${memories.length} special memorie${memories.length > 1 ? "s" : ""} 🎉',
+              style: TextStyle(fontSize: context.sp(AppDimensions.fontM)),
+            ),
+            SizedBox(height: context.space(8)),
+            Text(
+              'Let\'s celebrate these special moments together!',
+              style: TextStyle(
+                fontSize: context.sp(AppDimensions.fontS),
+                color: Colors.grey[600],
+              ),
+            ),
+          ],
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: Text(
-              'View Memories',
+              'Later',
               style: TextStyle(
-                color: AppColors.primary,
+                color: Colors.grey[600],
                 fontSize: context.sp(AppDimensions.fontM),
               ),
             ),
           ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _viewAnniversaryMemories(memories);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            child: Text(
+              'View Memories',
+              style: TextStyle(fontSize: context.sp(AppDimensions.fontM)),
+            ),
+          ),
         ],
+      ),
+    );
+  }
+
+  void _viewAnniversaryMemories(List<Memory> memories) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => AnniversaryMemoriesView(memories: memories),
       ),
     );
   }
@@ -98,6 +143,13 @@ class _MemoriesPageState extends State<MemoriesPage> {
     );
   }
 
+  void _showMemoryDetail(dynamic memory) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => MemoryDetailView(memory: memory)),
+    );
+  }
+
   void _showMemoryActions(dynamic memory, MemoryController controller) {
     showModalBottomSheet(
       context: context,
@@ -109,7 +161,15 @@ class _MemoriesPageState extends State<MemoriesPage> {
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
-              leading: const Icon(Icons.edit, color: Colors.blue),
+              leading: const Icon(Icons.visibility, color: Colors.blue),
+              title: const Text('View Memory'),
+              onTap: () {
+                Navigator.pop(context);
+                _showMemoryDetail(memory);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.edit, color: Colors.orange),
               title: const Text('Edit Memory'),
               onTap: () {
                 Navigator.pop(context);
@@ -165,6 +225,10 @@ class _MemoriesPageState extends State<MemoriesPage> {
     );
   }
 
+  Future<void> _handleRefresh(MemoryController controller) async {
+    await controller.loadMemories();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -181,7 +245,6 @@ class _MemoriesPageState extends State<MemoriesPage> {
         onPressed: _showCreateMemoryModal,
         backgroundColor: AppColors.primary,
         child: const Icon(Icons.add_a_photo),
-        // label: const Text(''),
       ),
     );
   }
@@ -226,27 +289,43 @@ class _MemoriesPageState extends State<MemoriesPage> {
   Widget _buildMemoriesList() {
     return Consumer<MemoryController>(
       builder: (context, controller, child) {
+        // Show skeleton loading when first loading
         if (controller.isLoading && controller.memories.isEmpty) {
-          return const Center(child: CircularProgressIndicator());
+          return const MemoryListSkeleton();
         }
 
+        // Show empty state when no memories
         if (controller.memories.isEmpty) {
-          return const MemoryEmptyState();
+          return RefreshIndicator(
+            onRefresh: () => _handleRefresh(controller),
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              child: SizedBox(
+                height: MediaQuery.of(context).size.height * 0.7,
+                child: const MemoryEmptyState(),
+              ),
+            ),
+          );
         }
 
+        // Show memories list with refresh
         return RefreshIndicator(
-          onRefresh: controller.loadMemories,
-          child: ListView.builder(
-            padding: EdgeInsets.all(context.space(16)),
-            itemCount: controller.memories.length,
-            itemBuilder: (context, index) {
-              final memory = controller.memories[index];
-              return MemoryCard(
-                memory: memory,
-                onMoreTap: () => _showMemoryActions(memory, controller),
-              );
-            },
-          ),
+          onRefresh: () => _handleRefresh(controller),
+          child: controller.isLoading
+              ? const MemoryListSkeleton()
+              : ListView.builder(
+                  padding: EdgeInsets.all(context.space(16)),
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  itemCount: controller.memories.length,
+                  itemBuilder: (context, index) {
+                    final memory = controller.memories[index];
+                    return MemoryCard(
+                      memory: memory,
+                      onTap: () => _showMemoryDetail(memory),
+                      onMoreTap: () => _showMemoryActions(memory, controller),
+                    );
+                  },
+                ),
         );
       },
     );

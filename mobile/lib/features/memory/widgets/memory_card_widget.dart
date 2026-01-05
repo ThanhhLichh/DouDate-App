@@ -7,28 +7,37 @@ import '../models/memory_models.dart';
 
 class MemoryCard extends StatelessWidget {
   final Memory memory;
+  final VoidCallback onTap;
   final VoidCallback onMoreTap;
 
-  const MemoryCard({super.key, required this.memory, required this.onMoreTap});
+  const MemoryCard({
+    super.key,
+    required this.memory,
+    required this.onTap,
+    required this.onMoreTap,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: EdgeInsets.only(bottom: context.space(24)),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: 20,
-            offset: const Offset(0, 5),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [_buildImage(context), _buildContent(context)],
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        margin: EdgeInsets.only(bottom: context.space(24)),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.08),
+              blurRadius: 20,
+              offset: const Offset(0, 5),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [_buildImage(context), _buildContent(context)],
+        ),
       ),
     );
   }
@@ -38,19 +47,40 @@ class MemoryCard extends StatelessWidget {
       borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
       child: AspectRatio(
         aspectRatio: 16 / 9,
-        child: Image.network(
-          memory.imageUrl,
-          fit: BoxFit.cover,
-          errorBuilder: (context, error, stackTrace) {
-            return Container(
-              color: Colors.grey[200],
-              child: Icon(
-                Icons.image_not_supported,
-                size: context.space(50),
-                color: Colors.grey[400],
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            Image.network(
+              memory.imageUrl,
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) {
+                return Container(
+                  color: Colors.grey[200],
+                  child: Icon(
+                    Icons.image_not_supported,
+                    size: context.space(50),
+                    color: Colors.grey[400],
+                  ),
+                );
+              },
+            ),
+            // Overlay gradient for better text visibility
+            Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              child: Container(
+                height: 60,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [Colors.transparent, Colors.black.withOpacity(0.3)],
+                  ),
+                ),
               ),
-            );
-          },
+            ),
+          ],
         ),
       ),
     );
@@ -65,8 +95,8 @@ class MemoryCard extends StatelessWidget {
           _buildHeader(context),
           SizedBox(height: context.space(12)),
           _buildDescription(context),
-          if (memory.tags != null && memory.tags!.isNotEmpty)
-            _buildTags(context),
+          // if (memory.tags != null && memory.tags!.isNotEmpty)
+          //   _buildTags(context),
         ],
       ),
     );
@@ -126,37 +156,39 @@ class MemoryCard extends StatelessWidget {
         color: Colors.grey[700],
         height: 1.5,
       ),
+      maxLines: 3,
+      overflow: TextOverflow.ellipsis,
     );
   }
 
-  Widget _buildTags(BuildContext context) {
-    return Column(
-      children: [
-        SizedBox(height: context.space(12)),
-        Wrap(
-          spacing: context.space(8),
-          runSpacing: context.space(8),
-          children: memory.tags!.map<Widget>((tag) {
-            return Container(
-              padding: EdgeInsets.symmetric(
-                horizontal: context.space(12),
-                vertical: context.space(6),
-              ),
-              decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Text(
-                '#$tag',
-                style: TextStyle(
-                  fontSize: context.sp(AppDimensions.fontS),
-                  color: AppColors.primary,
-                ),
-              ),
-            );
-          }).toList(),
-        ),
-      ],
-    );
-  }
+  // Widget _buildTags(BuildContext context) {
+  //   return Column(
+  //     children: [
+  //       SizedBox(height: context.space(12)),
+  //       Wrap(
+  //         spacing: context.space(8),
+  //         runSpacing: context.space(8),
+  //         children: memory.tags!.map<Widget>((tag) {
+  //           return Container(
+  //             padding: EdgeInsets.symmetric(
+  //               horizontal: context.space(12),
+  //               vertical: context.space(6),
+  //             ),
+  //             decoration: BoxDecoration(
+  //               color: AppColors.primary.withOpacity(0.1),
+  //               borderRadius: BorderRadius.circular(20),
+  //             ),
+  //             child: Text(
+  //               '#$tag',
+  //               style: TextStyle(
+  //                 fontSize: context.sp(AppDimensions.fontS),
+  //                 color: AppColors.primary,
+  //               ),
+  //             ),
+  //           );
+  //         }).toList(),
+  //       ),
+  //     ],
+  //   );
+  // }
 }

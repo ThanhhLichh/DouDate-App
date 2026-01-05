@@ -18,7 +18,6 @@ class MemoryRepository {
       imageUrl:
           'https://images.unsplash.com/photo-1511920170033-f8396924c348?w=800',
       createdAt: DateTime(2024, 1, 15),
-      tags: ['date', 'coffee'],
     ),
     Memory(
       id: '2',
@@ -28,7 +27,6 @@ class MemoryRepository {
       imageUrl:
           'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=800',
       createdAt: DateTime(2024, 3, 22),
-      tags: ['travel', 'mountains'],
     ),
   ];
 
@@ -64,7 +62,6 @@ class MemoryRepository {
       imageUrl:
           'https://images.unsplash.com/photo-1502086223501-7ea6ecd79368?w=800',
       createdAt: DateTime.now(),
-      tags: request.tags,
     );
 
     _mockMemories.insert(0, newMemory);
@@ -137,7 +134,6 @@ class MemoryRepository {
             ? 'https://images.unsplash.com/photo-1502086223501-7ea6ecd79368?w=800'
             : _mockMemories[index].imageUrl,
         createdAt: _mockMemories[index].createdAt,
-        tags: tags,
       );
 
       _mockMemories[index] = updatedMemory;

@@ -130,7 +130,6 @@ class MemoryController extends ChangeNotifier {
         title: title,
         description: description,
         imageBase64: base64Image,
-        tags: tags,
       );
 
       final response = await _repository.createMemory(request);

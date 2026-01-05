@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:intl/intl.dart';
+import 'memory_detail_view.dart';
 import '../memory_controller.dart';
 import '../../../core/utils/responsive_helper.dart';
-import '../../../core/constants/app_dimensions.dart';
 
 class AllPhotosView extends StatelessWidget {
   const AllPhotosView({super.key});
@@ -11,7 +10,7 @@ class AllPhotosView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.black,
         iconTheme: const IconThemeData(color: Colors.white),
@@ -23,7 +22,7 @@ class AllPhotosView extends StatelessWidget {
             return const Center(
               child: Text(
                 'No photos yet',
-                style: TextStyle(color: Colors.white),
+                style: TextStyle(color: Colors.grey),
               ),
             );
           }
@@ -39,8 +38,21 @@ class AllPhotosView extends StatelessWidget {
             itemBuilder: (context, index) {
               final memory = controller.memories[index];
               return GestureDetector(
-                onTap: () => _showFullImage(context, memory),
-                child: Image.network(memory.imageUrl, fit: BoxFit.cover),
+                onTap: () => _navigateToDetail(context, memory),
+                child: Image.network(
+                  memory.imageUrl,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Container(
+                      color: Colors.grey[200],
+                      child: Icon(
+                        Icons.image_not_supported,
+                        size: 30,
+                        color: Colors.grey[400],
+                      ),
+                    );
+                  },
+                ),
               );
             },
           );
@@ -49,62 +61,10 @@ class AllPhotosView extends StatelessWidget {
     );
   }
 
-  void _showFullImage(BuildContext context, dynamic memory) {
+  void _navigateToDetail(BuildContext context, dynamic memory) {
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (context) => Scaffold(
-          backgroundColor: Colors.black,
-          appBar: AppBar(
-            backgroundColor: Colors.black,
-            iconTheme: const IconThemeData(color: Colors.white),
-          ),
-          body: Column(
-            children: [
-              Expanded(
-                child: Center(
-                  child: InteractiveViewer(
-                    child: Image.network(memory.imageUrl),
-                  ),
-                ),
-              ),
-              Container(
-                color: Colors.black87,
-                padding: EdgeInsets.all(context.space(16)),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      memory.title,
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: context.sp(AppDimensions.fontL),
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    SizedBox(height: context.space(8)),
-                    Text(
-                      memory.description,
-                      style: TextStyle(
-                        color: Colors.white70,
-                        fontSize: context.sp(AppDimensions.fontM),
-                      ),
-                    ),
-                    SizedBox(height: context.space(4)),
-                    Text(
-                      DateFormat('MMMM dd, yyyy').format(memory.createdAt),
-                      style: TextStyle(
-                        color: Colors.white54,
-                        fontSize: context.sp(AppDimensions.fontS),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
+      MaterialPageRoute(builder: (context) => MemoryDetailView(memory: memory)),
     );
   }
 }
