@@ -16,14 +16,14 @@ import '../chat/chat_page.dart';
 import '../memory/memories_page.dart';
 import '../profile/settings_page.dart';
 
-class HomeSinglePage extends StatefulWidget {
-  const HomeSinglePage({super.key});
+class HomeCouplePage extends StatefulWidget {
+  const HomeCouplePage({super.key});
 
   @override
-  State<HomeSinglePage> createState() => _HomePageState();
+  State<HomeCouplePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomeSinglePage> {
+class _HomePageState extends State<HomeCouplePage> {
   int _selectedIndex = 0;
 
   @override

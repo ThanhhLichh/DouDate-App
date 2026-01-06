@@ -16,7 +16,7 @@ class AppRouter {
       GoRoute(
         path: '/home',
         builder: (context, state) =>
-            const HomeSinglePage(), // Trang sau khi đăng nhập
+            const HomeCouplePage(), // Trang sau khi đăng nhập
       ),
     ],
   );
