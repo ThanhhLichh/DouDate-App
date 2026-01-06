@@ -35,7 +35,8 @@ REFRESH_TOKEN_EXPIRE_DAYS = 30
 
 def create_access_token(user_id: int, role: str) -> str:
     payload = {
-        "sub": str(user_id),
+        "sub": "doudate-app",     
+        "user_id": str(user_id), 
         "role": role,
         "exp": datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES),
     }

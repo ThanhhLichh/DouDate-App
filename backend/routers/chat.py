@@ -39,16 +39,28 @@ manager = ConnectionManager()
 # AUTH FOR WEBSOCKET
 
 
-def get_user_id_from_token(token: str) -> int:
+def get_user_id_from_token(token: str) -> int | None:
     try:
         payload = jwt.decode(
             token,
             settings.SECRET_KEY,
             algorithms=["HS256"],
         )
-        return int(payload.get("sub"))
+
+        # 1️⃣ Check subject (app)
+        if payload.get("sub") != "doudate-app":
+            return None
+
+        # 2️⃣ Lấy user_id ĐÚNG CHỖ
+        user_id = payload.get("user_id")
+        if not user_id:
+            return None
+
+        return int(user_id)
+
     except JWTError:
         return None
+
 
 
 
@@ -59,13 +71,19 @@ def get_user_id_from_token(token: str) -> int:
 async def chat_ws(
     websocket: WebSocket,
     couple_id: int,
-    token: str,
     db: Session = Depends(get_db),
 ):
+    # LẤY TOKEN TỪ QUERY PARAM
+    token = websocket.query_params.get("token")
+    if not token:
+        await websocket.close(code=1008)
+        return
+
     user_id = get_user_id_from_token(token)
     if not user_id:
         await websocket.close(code=1008)
         return
+
 
     # Check user thuộc couple
     couple = (
