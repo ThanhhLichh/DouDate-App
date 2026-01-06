@@ -3,6 +3,8 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
 from jose import jwt, JWTError
+from datetime import date
+
 
 from core.db import get_db
 from core.config import settings
@@ -105,4 +107,40 @@ def get_couple_stats(
         "moment_count": moment_count,
         "memory_count": memory_count,
     }
+
+# break couple endpoint 
+@router.post(
+    "/break",
+    status_code=status.HTTP_200_OK,
+)
+def break_couple(
+    db: Session = Depends(get_db),
+    user_id: int = Depends(get_current_user_id),
+):
+    couple = (
+        db.query(Couple)
+        .filter(
+            or_(
+                Couple.user1_id == user_id,
+                Couple.user2_id == user_id,
+            ),
+            Couple.end_date.is_(None),
+        )
+        .first()
+    )
+
+    if not couple:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No active couple to break",
+        )
+
+    couple.end_date = date.today()
+    db.commit()
+
+    return {
+        "message": "Couple ended successfully"
+    }
+
+
 

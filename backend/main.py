@@ -8,6 +8,7 @@ from routers.messages import router as messages_router
 from routers.moments import router as moments_router
 from routers.memories import router as memories_router
 from routers.users import router as users_router
+from routers.qr_socket import router as qr_socket_router
 
 app = FastAPI(
     title=settings.APP_NAME,
@@ -22,6 +23,7 @@ app.include_router(messages_router)
 app.include_router(moments_router)
 app.include_router(memories_router)
 app.include_router(users_router)
+app.include_router(qr_socket_router)
 
 @app.get("/health")
 def health_check():

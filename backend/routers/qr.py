@@ -54,13 +54,14 @@ def create_qr_endpoint(
     "/scan",
     response_model=QrScanResponse,
 )
-def scan_qr_endpoint(
+async def scan_qr_endpoint(
     data: QrScanRequest,
     db: Session = Depends(get_db),
     user_id: int = Depends(get_current_user_id),
 ):
     try:
-        return scan_qr(db, data.token, user_id)
+        return await scan_qr(db, data.token, user_id)
+
     except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

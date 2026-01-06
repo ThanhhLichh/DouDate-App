@@ -33,12 +33,14 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 15
 REFRESH_TOKEN_EXPIRE_DAYS = 30
 
 
-def create_access_token(user_id: int) -> str:
+def create_access_token(user_id: int, role: str) -> str:
     payload = {
         "sub": str(user_id),
+        "role": role,
         "exp": datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES),
     }
     return jwt.encode(payload, settings.SECRET_KEY, algorithm=ALGORITHM)
+
 
 
 
@@ -94,7 +96,12 @@ def refresh_access_token(db: Session, raw_refresh_token: str) -> str:
     if not token:
         raise ValueError("Invalid or expired refresh token")
 
-    return create_access_token(token.user_id)
+    user = db.query(User).filter(User.id == token.user_id).first()
+    if not user:
+        raise ValueError("User not found")
+
+    return create_access_token(user.id, user.role)
+
 
 
 
@@ -138,7 +145,7 @@ def login_user(
     if not user.is_active:
         raise ValueError("User is inactive")
 
-    access_token = create_access_token(user.id)
+    access_token = create_access_token(user.id, user.role)
     refresh_token = create_refresh_token(db, user.id)
 
     return {

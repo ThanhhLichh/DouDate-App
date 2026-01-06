@@ -1,5 +1,7 @@
 import uuid
 from datetime import datetime, timedelta, date
+from routers.qr_socket import qr_manager
+
 
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
@@ -69,7 +71,7 @@ def create_qr(db: Session, user_id: int):
 # SCAN QR
 
 
-def scan_qr(db: Session, token: str, scanner_user_id: int):
+async def scan_qr(db: Session, token: str, scanner_user_id: int):
     qr = db.query(QrToken).filter(QrToken.token == token).first()
     if not qr:
         raise ValueError("QR not found")
@@ -94,6 +96,15 @@ def scan_qr(db: Session, token: str, scanner_user_id: int):
 
     user = db.query(User).filter(User.id == qr.user_id).first()
 
+    #  REALTIME EVENT TO USER A
+    await qr_manager.notify_qr_scanned(
+        qr.user_id,
+        {
+            "event": "QR_SCANNED",
+            "from_user_id": scanner_user_id,
+        }
+    )
+
     return {
         "from_user_id": user.id,
         "from_user_name": user.full_name,
@@ -101,6 +112,9 @@ def scan_qr(db: Session, token: str, scanner_user_id: int):
         "expires_at": qr.expires_at,
         "status": request.status,
     }
+
+
+
 
 
 
