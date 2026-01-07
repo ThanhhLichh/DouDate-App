@@ -1,14 +1,19 @@
 class ApiConfig {
   // Base URL - Thay đổi theo môi trường
-  static const String baseUrl = 'http://localhost:8000'; // FastAPI default
+  static const String baseUrl = 'http://192.168.1.5:8000'; // FastAPI default
   // static const String baseUrl = 'http://10.0.2.2:8000'; // Android Emulator
   // static const String baseUrl = 'https://your-domain.com'; // Production
 
-  // API Endpoints
+  // --------------- API Endpoints ---------------
+
+  // Auth Endpoints
   static const String login = '/auth/login';
   static const String register = '/auth/register';
   static const String refreshToken = '/auth/refresh';
   static const String profile = '/users/profile';
+
+  // Couple Endpoints
+  static const String checkCouple = '/couple/me';
 
   // Timeouts
   static const int connectTimeout = 30000; // 30 seconds

@@ -34,17 +34,27 @@ class _LoginPageState extends State<LoginPage> {
       _passwordController.text,
     );
 
-    if (mounted) {
-      if (success) {
-        context.go('/home');
+    if (!mounted) return;
+
+    if (success) {
+      final coupleStatus = await authController.checkCoupleStatus();
+
+      if (!mounted) return;
+
+      if (coupleStatus != null && coupleStatus.hasCouple) {
+        context.go('/home-couple');
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(authController.errorMessage ?? 'Login failed'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        context.go('/home-single');
       }
+    } else {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(authController.errorMessage ?? 'Login failed'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 

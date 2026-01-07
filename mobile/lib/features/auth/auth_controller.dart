@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../core/services/storage_service.dart';
 import 'models/auth_models.dart';
 import 'repository/auth_repository.dart';
+import '../../core/constants/app_constants.dart';
 
 class AuthController extends ChangeNotifier {
   final StorageService _storageService = StorageService();
@@ -51,10 +52,15 @@ class AuthController extends ChangeNotifier {
       final response = await _authRepository.login(request);
 
       if (response.success && response.data != null) {
-        _currentUser = response.data!.user;
+        // Save tokens
         await _storageService.saveToken(response.data!.accessToken);
         await _storageService.saveRefreshToken(response.data!.refreshToken);
-        await _storageService.saveUser(_currentUser!.toJson());
+
+        // Load user data từ storage (đã có từ register hoặc previous login)
+        final userJson = await _storageService.getUser();
+        if (userJson != null) {
+          _currentUser = User.fromJson(userJson);
+        }
 
         _isLoading = false;
         notifyListeners();
@@ -66,10 +72,26 @@ class AuthController extends ChangeNotifier {
         return false;
       }
     } catch (e) {
-      _errorMessage = 'An error occurred. Please try again.';
+      _errorMessage = 'Network error. Please check your connection.';
       _isLoading = false;
       notifyListeners();
       return false;
+    }
+  }
+
+  // Check Couple Status
+  Future<CoupleCheckResponse?> checkCoupleStatus() async {
+    try {
+      final token = await _storageService.getToken();
+      if (token == null) return null;
+
+      final response = await _authRepository.checkCouple(token);
+      if (response.success && response.data != null) {
+        return response.data;
+      }
+      return null;
+    } catch (e) {
+      return null;
     }
   }
 
@@ -78,23 +100,28 @@ class AuthController extends ChangeNotifier {
     required String name,
     required String email,
     required String password,
-    String? avatarUrl,
   }) async {
-    // Validation
+    // Validation using extension methods
     if (name.isEmpty || email.isEmpty || password.isEmpty) {
-      _errorMessage = 'All fields are required';
+      _errorMessage = ErrorMessages.allFieldsRequired;
       notifyListeners();
       return false;
     }
 
     if (!_isValidEmail(email)) {
-      _errorMessage = 'Please enter a valid email';
+      _errorMessage = ErrorMessages.invalidEmail;
       notifyListeners();
       return false;
     }
 
-    if (password.length < 6) {
-      _errorMessage = 'Password must be at least 6 characters';
+    if (password.length < ValidationConstants.minPasswordLength) {
+      _errorMessage = ErrorMessages.shortPassword;
+      notifyListeners();
+      return false;
+    }
+
+    if (!_isStrongPassword(password)) {
+      _errorMessage = ErrorMessages.weakPassword;
       notifyListeners();
       return false;
     }
@@ -105,30 +132,43 @@ class AuthController extends ChangeNotifier {
 
     try {
       final request = RegisterRequest(
-        name: name,
         email: email,
         password: password,
-        avatarUrl: avatarUrl,
+        fullName: name,
       );
+
       final response = await _authRepository.register(request);
 
       if (response.success && response.data != null) {
-        _currentUser = response.data!.user;
-        await _storageService.saveToken(response.data!.accessToken);
-        await _storageService.saveRefreshToken(response.data!.refreshToken);
+        _currentUser = response.data;
+        // Lưu user info nhưng chưa có token
+        // User sẽ vào HomeSinglePage để kết nối với partner
         await _storageService.saveUser(_currentUser!.toJson());
 
         _isLoading = false;
         notifyListeners();
         return true;
       } else {
-        _errorMessage = response.message ?? 'Registration failed';
+        // Parse error message from backend
+        String errorMsg = response.message ?? 'Registration failed';
+
+        // Handle common backend errors
+        if (response.errors != null) {
+          final errors = response.errors!;
+          if (errors.containsKey('email')) {
+            errorMsg = 'Email already exists';
+          } else if (errors.containsKey('detail')) {
+            errorMsg = errors['detail'].toString();
+          }
+        }
+
+        _errorMessage = errorMsg;
         _isLoading = false;
         notifyListeners();
         return false;
       }
     } catch (e) {
-      _errorMessage = 'An error occurred. Please try again.';
+      _errorMessage = 'Network error. Please check your connection.';
       _isLoading = false;
       notifyListeners();
       return false;
@@ -166,5 +206,18 @@ class AuthController extends ChangeNotifier {
   // Email validation
   bool _isValidEmail(String email) {
     return RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email);
+  }
+
+  // Password strength validation
+  bool _isStrongPassword(String password) {
+    // Ít nhất 1 chữ hoa, 1 chữ thường, 1 số, 1 ký tự đặc biệt
+    final hasUppercase = password.contains(RegExp(r'[A-Z]'));
+    final hasLowercase = password.contains(RegExp(r'[a-z]'));
+    final hasDigits = password.contains(RegExp(r'[0-9]'));
+    final hasSpecialCharacters = password.contains(
+      RegExp(r'[!@#$%^&*(),.?":{}|<>]'),
+    );
+
+    return hasUppercase && hasLowercase && hasDigits && hasSpecialCharacters;
   }
 }

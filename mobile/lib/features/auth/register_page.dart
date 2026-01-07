@@ -41,16 +41,21 @@ class _RegisterPageState extends State<RegisterPage> {
       if (success) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Registration successful!'),
+            content: Text(
+              'Registration successful! Connect with your partner.',
+            ),
             backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
           ),
         );
-        context.go('/home');
+        // Navigate to HomeSinglePage để user kết nối với partner
+        context.go('/home-single');
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(authController.errorMessage ?? 'Registration failed'),
             backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
           ),
         );
       }
@@ -99,7 +104,7 @@ class _RegisterPageState extends State<RegisterPage> {
 
                   ResponsiveHelper.verticalSpace(context, AppDimensions.spaceM),
 
-                  // Avatar Picker
+                  // Avatar Picker (Optional - có thể bỏ vì backend không yêu cầu)
                   GestureDetector(
                     onTap: () {
                       ScaffoldMessenger.of(context).showSnackBar(
@@ -127,13 +132,13 @@ class _RegisterPageState extends State<RegisterPage> {
                   // Name Field
                   CustomTextField(
                     controller: _nameController,
-                    hintText: "Name",
+                    hintText: "Full Name",
                   ),
 
                   // Email Field
                   CustomTextField(
                     controller: _emailController,
-                    hintText: "Email or Phone",
+                    hintText: "Email",
                   ),
 
                   // Password Field
@@ -145,10 +150,7 @@ class _RegisterPageState extends State<RegisterPage> {
                     onToggleVisibility: authController.togglePasswordVisibility,
                   ),
 
-                  ResponsiveHelper.verticalSpace(
-                    context,
-                    AppDimensions.spaceXL,
-                  ),
+                  ResponsiveHelper.verticalSpace(context, AppDimensions.spaceL),
 
                   // Register Button
                   GestureDetector(
@@ -163,7 +165,11 @@ class _RegisterPageState extends State<RegisterPage> {
                           context,
                           AppDimensions.radiusXL,
                         ),
-                        gradient: AppColors.buttonGradient,
+                        gradient: authController.isLoading
+                            ? LinearGradient(
+                                colors: [Colors.grey[300]!, Colors.grey[400]!],
+                              )
+                            : AppColors.buttonGradient,
                       ),
                       child: Center(
                         child: authController.isLoading
@@ -200,7 +206,9 @@ class _RegisterPageState extends State<RegisterPage> {
                         ),
                       ),
                       TextButton(
-                        onPressed: () => context.go('/login'),
+                        onPressed: authController.isLoading
+                            ? null
+                            : () => context.go('/login'),
                         style: TextButton.styleFrom(
                           padding: EdgeInsets.symmetric(
                             horizontal: context.space(4),
@@ -211,6 +219,7 @@ class _RegisterPageState extends State<RegisterPage> {
                           style: TextStyle(
                             color: const Color(0xFF6A5AE0),
                             fontSize: context.sp(AppDimensions.fontS),
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
                       ),

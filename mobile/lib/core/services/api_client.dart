@@ -20,6 +20,7 @@ class ApiClient {
       InterceptorsWrapper(
         onRequest: (options, handler) {
           print('REQUEST[${options.method}] => ${options.uri}');
+          print('Headers: ${options.headers}');
           print('Data: ${options.data}');
           return handler.next(options);
         },
@@ -27,13 +28,15 @@ class ApiClient {
           print(
             'RESPONSE[${response.statusCode}] => ${response.requestOptions.uri}',
           );
+          print('Response Data: ${response.data}');
           return handler.next(response);
         },
         onError: (error, handler) {
           print(
             'ERROR[${error.response?.statusCode}] => ${error.requestOptions.uri}',
           );
-          print('Message: ${error.message}');
+          print('Error Message: ${error.message}');
+          print('Error Response: ${error.response?.data}');
           return handler.next(error);
         },
       ),
@@ -127,16 +130,61 @@ class ApiClient {
     Response response,
     T Function(dynamic)? fromJsonT,
   ) {
+    // Success status codes
     if (response.statusCode == 200 || response.statusCode == 201) {
-      return ApiResponse.fromJson(response.data, fromJsonT);
+      final data = response.data;
+
+      // Case 1: Response là object trực tiếp (login, register, couple check)
+      if (fromJsonT != null && data is Map<String, dynamic>) {
+        // Check nếu có wrapper {success, message, data}
+        if (data.containsKey('success') && data.containsKey('data')) {
+          // Wrapped response format
+          return ApiResponse.fromJson(data, fromJsonT);
+        } else {
+          // Direct object response - không có wrapper
+          return ApiResponse<T>(
+            success: true,
+            message: 'Success',
+            data: fromJsonT(data),
+          );
+        }
+      }
+
+      // Case 2: Response có format chuẩn nhưng không có fromJsonT
+      if (data is Map<String, dynamic> && data.containsKey('data')) {
+        return ApiResponse.fromJson(data, fromJsonT);
+      }
+
+      // Case 3: Response là primitive type hoặc list
+      if (fromJsonT != null) {
+        try {
+          return ApiResponse<T>(
+            success: true,
+            message: 'Success',
+            data: fromJsonT(data),
+          );
+        } catch (e) {
+          return ApiResponse.error(
+            message: 'Failed to parse response: ${e.toString()}',
+          );
+        }
+      }
+
+      // Case 4: Default - treat whole response as data
+      return ApiResponse<T>(
+        success: true,
+        message: 'Success',
+        data: data as T?,
+      );
     } else {
+      // Non-success status codes
       return ApiResponse.error(
         message: 'Unexpected status code: ${response.statusCode}',
       );
     }
   }
 
-  // Handle Error
+  // Handle Error - Improved
   ApiResponse<T> _handleError<T>(dynamic error) {
     if (error is DioException) {
       switch (error.type) {
@@ -146,18 +194,47 @@ class ApiClient {
           return ApiResponse.error(
             message: 'Connection timeout. Please check your internet.',
           );
+
         case DioExceptionType.badResponse:
           final data = error.response?.data;
-          return ApiResponse.error(
-            message: data?['message'] ?? 'Server error occurred',
-            errors: data?['errors'],
-          );
+          String message = 'Server error occurred';
+          Map<String, dynamic>? errors;
+
+          if (data is Map<String, dynamic>) {
+            // FastAPI validation error format
+            if (data.containsKey('detail')) {
+              final detail = data['detail'];
+              if (detail is String) {
+                message = detail;
+              } else if (detail is List) {
+                // Validation errors
+                message = detail
+                    .map((e) => '${e['loc']?.last ?? 'Field'}: ${e['msg']}')
+                    .join(', ');
+              }
+            } else if (data.containsKey('message')) {
+              message = data['message'];
+            }
+
+            errors = data;
+          }
+
+          return ApiResponse.error(message: message, errors: errors);
+
         case DioExceptionType.cancel:
           return ApiResponse.error(message: 'Request cancelled');
+
+        case DioExceptionType.connectionError:
+          return ApiResponse.error(
+            message: 'No internet connection. Please check your network.',
+          );
+
         default:
           return ApiResponse.error(message: 'Network error. Please try again.');
       }
     }
-    return ApiResponse.error(message: 'An unexpected error occurred');
+    return ApiResponse.error(
+      message: 'An unexpected error occurred: ${error.toString()}',
+    );
   }
 }
