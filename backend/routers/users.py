@@ -1,14 +1,17 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+from sqlalchemy import or_
 
 from core.db import get_db
 from core.security import get_current_user_id
 
 from models.user import User
+from models.couple import Couple
+
 from schemas.user import (
     UserPublic,
-    UserProfileResponse,
-    UserProfileUpdate,
+    UserMeResponse,
+    UserMeUpdate,
 )
 
 router = APIRouter(
@@ -17,11 +20,11 @@ router = APIRouter(
 )
 
 # =========================
-# GET /users/me (PROFILE)
+# GET /users/me
 # =========================
 @router.get(
     "/me",
-    response_model=UserProfileResponse,
+    response_model=UserMeResponse,
 )
 def get_my_profile(
     db: Session = Depends(get_db),
@@ -30,18 +33,46 @@ def get_my_profile(
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    return user
+
+    couple = (
+        db.query(Couple)
+        .filter(
+            or_(
+                Couple.user1_id == user_id,
+                Couple.user2_id == user_id,
+            ),
+            Couple.end_date.is_(None),
+        )
+        .first()
+    )
+
+    partner_name = None
+    if couple:
+        partner_id = (
+            couple.user2_id if couple.user1_id == user_id else couple.user1_id
+        )
+        partner = db.query(User).filter(User.id == partner_id).first()
+        partner_name = partner.full_name if partner else None
+
+    return {
+        "email": user.email,
+        "full_name": user.full_name,
+        "avatar_url": user.avatar_url,
+        "birth_date": user.birth_date,
+        "gender": user.gender,
+        "partner_name": partner_name,
+    }
 
 
 # =========================
-# PUT /users/me (UPDATE PROFILE)
+# PUT /users/me
 # =========================
 @router.put(
     "/me",
-    response_model=UserProfileResponse,
+    response_model=UserMeResponse,
 )
 def update_my_profile(
-    data: UserProfileUpdate,
+    data: UserMeUpdate,
     db: Session = Depends(get_db),
     user_id: int = Depends(get_current_user_id),
 ):
@@ -49,25 +80,17 @@ def update_my_profile(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    if data.full_name is not None:
-        user.full_name = data.full_name
-
-    if data.avatar_url is not None:
-        user.avatar_url = data.avatar_url
-
-    if data.birth_date is not None:
-        user.birth_date = data.birth_date
-
-    if data.bio is not None:
-        user.bio = data.bio
+    for field, value in data.dict(exclude_unset=True).items():
+        setattr(user, field, value)
 
     db.commit()
     db.refresh(user)
-    return user
+
+    return get_my_profile(db, user_id)
 
 
 # =========================
-# GET /users/{id} (PUBLIC USER)
+# GET /users/{id}
 # =========================
 @router.get(
     "/{user_id}",

@@ -23,7 +23,7 @@ class User(Base):
 
     avatar_url = Column(String(1024), nullable=True)
     birth_date = Column(Date, nullable=True)
-    bio = Column(String(255), nullable=True)
+    gender = Column(Enum("male", "female", "other"), nullable=True)
 
     role = Column(Enum("user", "admin"), default="user", nullable=False)
     is_active = Column(Boolean, default=True, nullable=False)
@@ -34,3 +34,4 @@ class User(Base):
         server_default=func.now(),
         onupdate=func.now(),
     )
+

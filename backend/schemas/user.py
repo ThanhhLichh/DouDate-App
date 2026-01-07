@@ -50,3 +50,16 @@ class UserProfileUpdate(BaseModel):
     birth_date: Optional[date] = None
     bio: Optional[str] = None
 
+class UserMeResponse(BaseModel):
+    email: str
+    full_name: str
+    avatar_url: Optional[str]
+    birth_date: Optional[date]
+    gender: Optional[str]
+    partner_name: Optional[str]
+
+class UserMeUpdate(BaseModel):
+    full_name: Optional[str]
+    avatar_url: Optional[str]
+    birth_date: Optional[date]
+    gender: Optional[str]
