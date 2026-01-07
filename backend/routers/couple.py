@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import or_
 from jose import jwt, JWTError
 from datetime import date
+from models.user import User
 
 
 from core.db import get_db
@@ -65,7 +66,7 @@ def get_couple_stats(
     db: Session = Depends(get_db),
     user_id: int = Depends(get_current_user_id),
 ):
-    # tìm couple của user
+    # tìm couple đang active
     couple = (
         db.query(Couple)
         .filter(
@@ -83,6 +84,17 @@ def get_couple_stats(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User has no active couple",
         )
+
+    # xác định bạn & partner
+    if couple.user1_id == user_id:
+        your_id = couple.user1_id
+        partner_id = couple.user2_id
+    else:
+        your_id = couple.user2_id
+        partner_id = couple.user1_id
+
+    your_user = db.query(User).filter(User.id == your_id).first()
+    partner_user = db.query(User).filter(User.id == partner_id).first()
 
     message_count = (
         db.query(Message)
@@ -103,10 +115,17 @@ def get_couple_stats(
     )
 
     return {
+        "your_name": your_user.full_name if your_user else None,
+        "your_avatar": your_user.avatar_url if your_user else None,
+        "partner_name": partner_user.full_name if partner_user else None,
+        "partner_avatar": partner_user.avatar_url if partner_user else None,
+        "start_date": couple.start_date,
+
         "message_count": message_count,
         "moment_count": moment_count,
         "memory_count": memory_count,
     }
+
 
 # break couple endpoint 
 @router.post(
