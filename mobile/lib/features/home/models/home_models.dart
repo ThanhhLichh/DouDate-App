@@ -1,8 +1,8 @@
 class CoupleDashboard {
   final String partnerName;
-  final String partnerAvatar;
+  final String? partnerAvatar;
   final String yourName;
-  final String yourAvatar;
+  final String? yourAvatar;
   final DateTime startDate;
   final int messageCount;
   final int momentCount;
@@ -11,9 +11,9 @@ class CoupleDashboard {
 
   CoupleDashboard({
     required this.partnerName,
-    required this.partnerAvatar,
+    this.partnerAvatar,
     required this.yourName,
-    required this.yourAvatar,
+    this.yourAvatar,
     required this.startDate,
     this.messageCount = 0,
     this.momentCount = 0,
@@ -26,15 +26,16 @@ class CoupleDashboard {
 
   factory CoupleDashboard.fromJson(Map<String, dynamic> json) {
     return CoupleDashboard(
-      partnerName: json['partner_name'] ?? json['partnerName'] ?? '',
-      partnerAvatar: json['partner_avatar'] ?? json['partnerAvatar'] ?? '',
-      yourName: json['your_name'] ?? json['yourName'] ?? '',
-      yourAvatar: json['your_avatar'] ?? json['yourAvatar'] ?? '',
-      startDate: DateTime.parse(json['start_date'] ?? json['startDate']),
-      messageCount: json['message_count'] ?? json['messageCount'] ?? 0,
-      momentCount: json['moment_count'] ?? json['momentCount'] ?? 0,
-      memoryCount: json['memory_count'] ?? json['memoryCount'] ?? 0,
-      todayQuote: json['today_quote'] ?? json['todayQuote'] ?? '',
+      partnerName: json['partner_name'] ?? '',
+      partnerAvatar: json['partner_avatar'],
+      yourName: json['your_name'] ?? '',
+      yourAvatar: json['your_avatar'],
+      startDate: DateTime.parse(json['start_date']),
+      messageCount: json['message_count'] ?? 0,
+      momentCount: json['moment_count'] ?? 0,
+      memoryCount: json['memory_count'] ?? 0,
+      todayQuote:
+          json['today_quote'] ?? "Every day with you feels like a gift.",
     );
   }
 
@@ -64,9 +65,9 @@ class CoupleStats {
 
   factory CoupleStats.fromJson(Map<String, dynamic> json) {
     return CoupleStats(
-      messageCount: json['message_count'] ?? json['messageCount'] ?? 0,
-      momentCount: json['moment_count'] ?? json['momentCount'] ?? 0,
-      memoryCount: json['memory_count'] ?? json['memoryCount'] ?? 0,
+      messageCount: json['message_count'] ?? 0,
+      momentCount: json['moment_count'] ?? 0,
+      memoryCount: json['memory_count'] ?? 0,
     );
   }
 

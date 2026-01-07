@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../core/utils/responsive_helper.dart';
 import '../../core/constants/app_dimensions.dart';
@@ -328,12 +329,39 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
           ),
           TextButton(
-            onPressed: () {
-              controller.logout();
+            onPressed: () async {
+              Navigator.pop(context); // Close dialog first
+
+              // Show loading indicator
+              if (!mounted) return;
+              showDialog(
+                context: context,
+                barrierDismissible: false,
+                builder: (context) =>
+                    const Center(child: CircularProgressIndicator()),
+              );
+
+              // Perform logout
+              final success = await controller.logout();
+
+              // Close loading dialog
+              if (!context.mounted) return;
               Navigator.pop(context);
-              // Navigate to login page
+
+              if (success) {
+                if (!context.mounted) return;
+                context.go('/login');
+              } else {
+                if (!context.mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Logout failed. Please try again.'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
             },
-            child: Text('Log Out', style: TextStyle(color: Colors.red)),
+            child: const Text('Log Out', style: TextStyle(color: Colors.red)),
           ),
         ],
       ),

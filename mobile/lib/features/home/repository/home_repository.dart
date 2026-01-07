@@ -10,32 +10,37 @@ class HomeRepository {
 
   // Get Dashboard Data
   Future<ApiResponse<CoupleDashboard>> getDashboardData(String token) async {
-    // Mock response khi chưa có API
-    await Future.delayed(const Duration(seconds: 1));
-    final quoteResponse = await getTodayQuote(token);
-    return ApiResponse.success(
-      message: 'Dashboard loaded successfully',
-      data: CoupleDashboard(
-        partnerName: "Emma",
-        partnerAvatar: "assets/images/partner.png",
-        yourName: "Alex",
-        yourAvatar: "assets/images/me.png",
-        startDate: DateTime(2024, 11, 20),
-        messageCount: 1200,
-        momentCount: 234,
-        memoryCount: 47,
-        todayQuote: quoteResponse.data ?? '',
-      ),
-    );
+    try {
+      // Get couple stats from backend
+      final response = await _apiClient.get<Map<String, dynamic>>(
+        ApiConfig.coupleStats,
+        token: token,
+      );
 
-    // Khi có API thực, uncomment code dưới và xóa mock code trên
-    /*
-    return await _apiClient.get<CoupleDashboard>(
-      '/dashboard',
-      token: token,
-      fromJsonT: (json) => CoupleDashboard.fromJson(json),
-    );
-    */
+      if (response.success && response.data != null) {
+        // Get today's quote separately
+        final quoteResponse = await getTodayQuote(token);
+
+        // Merge stats data with quote
+        final statsData = response.data!;
+        final dashboardData = {
+          ...statsData,
+          'today_quote':
+              quoteResponse.data ?? 'Every day with you feels like a gift.',
+        };
+
+        return ApiResponse.success(
+          message: 'Dashboard loaded successfully',
+          data: CoupleDashboard.fromJson(dashboardData),
+        );
+      } else {
+        return ApiResponse.error(
+          message: response.message ?? 'Failed to load dashboard',
+        );
+      }
+    } catch (e) {
+      return ApiResponse.error(message: 'An error occurred: ${e.toString()}');
+    }
   }
 
   // Get Today's Quote
@@ -49,36 +54,44 @@ class HomeRepository {
         final List<dynamic> json = jsonDecode(response.body);
         final quote = json.first['q'] as String;
 
-        // OPTIONAL: đảm bảo quote ngắn < 20 chữ
+        // Ensure quote is short (< 20 words)
         final wordCount = quote.split(' ').length;
         if (wordCount > 20) {
-          return ApiResponse.error(message: 'Quote too long');
+          // Return default quote if too long
+          return ApiResponse.success(
+            data: 'Every day with you feels like a gift.',
+          );
         }
 
         return ApiResponse.success(data: quote);
       } else {
-        return ApiResponse.error(message: 'HTTP ${response.statusCode}');
+        return ApiResponse.success(
+          data: 'Every day with you feels like a gift.',
+        );
       }
     } catch (e) {
-      return ApiResponse.error(message: e.toString());
+      // Return default quote on error
+      return ApiResponse.success(data: 'Every day with you feels like a gift.');
     }
   }
 
   // Get Couple Stats
   Future<ApiResponse<CoupleStats>> getCoupleStats(String token) async {
-    // Mock response
-    await Future.delayed(const Duration(milliseconds: 500));
-    return ApiResponse.success(
-      data: CoupleStats(messageCount: 1200, momentCount: 234, memoryCount: 47),
-    );
+    try {
+      final response = await _apiClient.get<Map<String, dynamic>>(
+        ApiConfig.coupleStats,
+        token: token,
+      );
 
-    // Khi có API thực
-    /*
-    return await _apiClient.get<CoupleStats>(
-      '/stats',
-      token: token,
-      fromJsonT: (json) => CoupleStats.fromJson(json),
-    );
-    */
+      if (response.success && response.data != null) {
+        return ApiResponse.success(data: CoupleStats.fromJson(response.data!));
+      } else {
+        return ApiResponse.error(
+          message: response.message ?? 'Failed to load stats',
+        );
+      }
+    } catch (e) {
+      return ApiResponse.error(message: 'An error occurred: ${e.toString()}');
+    }
   }
 }

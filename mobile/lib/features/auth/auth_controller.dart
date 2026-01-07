@@ -32,13 +32,13 @@ class AuthController extends ChangeNotifier {
   Future<bool> login(String email, String password) async {
     // Validation
     if (email.isEmpty || password.isEmpty) {
-      _errorMessage = 'Email and password are required';
+      _errorMessage = ErrorMessages.allFieldsRequired;
       notifyListeners();
       return false;
     }
 
     if (!_isValidEmail(email)) {
-      _errorMessage = 'Please enter a valid email';
+      _errorMessage = ErrorMessages.invalidEmail;
       notifyListeners();
       return false;
     }
@@ -53,7 +53,11 @@ class AuthController extends ChangeNotifier {
 
       if (response.success && response.data != null) {
         // Save tokens
-        await _storageService.saveToken(response.data!.accessToken);
+        await _storageService.saveTokenWithExpiry(response.data!.accessToken);
+        await _storageService.saveTokenWithExpiry(
+          response.data!.refreshToken,
+          isRefreshToken: true,
+        );
         await _storageService.saveRefreshToken(response.data!.refreshToken);
 
         // Load user data từ storage (đã có từ register hoặc previous login)
@@ -72,7 +76,7 @@ class AuthController extends ChangeNotifier {
         return false;
       }
     } catch (e) {
-      _errorMessage = 'Network error. Please check your connection.';
+      _errorMessage = ErrorMessages.networkError;
       _isLoading = false;
       notifyListeners();
       return false;
@@ -156,7 +160,7 @@ class AuthController extends ChangeNotifier {
         if (response.errors != null) {
           final errors = response.errors!;
           if (errors.containsKey('email')) {
-            errorMsg = 'Email already exists';
+            errorMsg = ErrorMessages.emailExists;
           } else if (errors.containsKey('detail')) {
             errorMsg = errors['detail'].toString();
           }
@@ -168,7 +172,61 @@ class AuthController extends ChangeNotifier {
         return false;
       }
     } catch (e) {
-      _errorMessage = 'Network error. Please check your connection.';
+      _errorMessage = ErrorMessages.networkError;
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  // Refresh Token
+  Future<bool> refreshToken() async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final refreshToken = await _storageService.getRefreshToken();
+      if (refreshToken == null) {
+        _errorMessage = ErrorMessages.refreshTokenNotFound;
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      }
+
+      // Check nếu refresh token đã hết hạn
+      final isExpired = await _storageService.isTokenExpired(
+        isRefreshToken: true,
+      );
+      if (isExpired) {
+        _errorMessage = ErrorMessages.sessionExpired;
+        await logout();
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      }
+
+      final response = await _authRepository.refreshToken(refreshToken);
+
+      if (response.success && response.data != null) {
+        // Lưu tokens mới với expiry time
+        await _storageService.saveTokenWithExpiry(response.data!.accessToken);
+        await _storageService.saveTokenWithExpiry(
+          response.data!.refreshToken,
+          isRefreshToken: true,
+        );
+
+        _isLoading = false;
+        notifyListeners();
+        return true;
+      } else {
+        _errorMessage = response.message ?? 'Refresh token failed';
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      }
+    } catch (e) {
+      _errorMessage = ErrorMessages.networkError;
       _isLoading = false;
       notifyListeners();
       return false;
@@ -176,17 +234,46 @@ class AuthController extends ChangeNotifier {
   }
 
   // Logout
-  Future<void> logout() async {
+  Future<bool> logout() async {
     _isLoading = true;
     notifyListeners();
 
-    await _storageService.deleteToken();
-    await _storageService.deleteRefreshToken();
-    await _storageService.deleteUser();
-    _currentUser = null;
+    try {
+      // Get refresh token for API call
+      final refreshToken = await _storageService.getRefreshToken();
 
-    _isLoading = false;
-    notifyListeners();
+      if (refreshToken != null) {
+        // Call logout API
+        final response = await _authRepository.logout(refreshToken);
+
+        if (!response.success) {
+          // Log error but continue with local logout
+          debugPrint('Logout API failed: ${response.message}');
+        }
+      }
+
+      // Clear local storage regardless of API result
+      await _storageService.deleteToken();
+      await _storageService.deleteRefreshToken();
+      await _storageService.deleteUser();
+      _currentUser = null;
+
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      // Even if API fails, still logout locally
+      debugPrint('Logout error: $e');
+
+      await _storageService.deleteToken();
+      await _storageService.deleteRefreshToken();
+      await _storageService.deleteUser();
+      _currentUser = null;
+
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    }
   }
 
   // Check if user is logged in

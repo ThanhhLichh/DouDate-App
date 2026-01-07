@@ -9,10 +9,40 @@ class StorageService {
   static const _refreshTokenKey = 'refresh_token';
   static const _userKey = 'user_data';
   static const _conversationSettingsKey = 'conversation_settings';
+  static const _accessTokenExpiryKey = 'access_token_expiry';
+  static const _refreshTokenExpiryKey = 'refresh_token_expiry';
 
   // Access Token
-  Future<void> saveToken(String token) async {
-    await _storage.write(key: _accessTokenKey, value: token);
+  Future<void> saveTokenWithExpiry(
+    String token, {
+    bool isRefreshToken = false,
+  }) async {
+    await _storage.write(
+      key: isRefreshToken ? _refreshTokenKey : _accessTokenKey,
+      value: token,
+    );
+
+    // Lưu thời gian hết hạn
+    final expiryTime = DateTime.now().add(
+      Duration(minutes: isRefreshToken ? 43200 : 15), // 30 ngày = 43200 phút
+    );
+
+    await _storage.write(
+      key: isRefreshToken ? _refreshTokenExpiryKey : _accessTokenExpiryKey,
+      value: expiryTime.toIso8601String(),
+    );
+  }
+
+  // Check nếu token đã hết hạn
+  Future<bool> isTokenExpired({bool isRefreshToken = false}) async {
+    final expiryStr = await _storage.read(
+      key: isRefreshToken ? _refreshTokenExpiryKey : _accessTokenExpiryKey,
+    );
+
+    if (expiryStr == null) return true;
+
+    final expiryTime = DateTime.parse(expiryStr);
+    return DateTime.now().isAfter(expiryTime);
   }
 
   Future<String?> getToken() async {

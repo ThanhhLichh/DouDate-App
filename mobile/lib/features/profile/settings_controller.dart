@@ -4,10 +4,12 @@ import 'package:image_picker/image_picker.dart';
 import '../../core/services/storage_service.dart';
 import 'models/user_profile.dart';
 import 'repository/settings_repository.dart';
+import '../../features/auth/auth_controller.dart';
 
 class SettingsController extends ChangeNotifier {
   final StorageService _storageService = StorageService();
   final SettingsRepository _repository = SettingsRepository();
+  final AuthController _authController = AuthController();
   final ImagePicker _imagePicker = ImagePicker();
 
   bool _isLoading = false;
@@ -238,14 +240,15 @@ class SettingsController extends ChangeNotifier {
   }
 
   // Logout
-  Future<void> logout() async {
-    try {
-      await _storageService.clearAll();
-      _userProfile = null;
-      notifyListeners();
-    } catch (e) {
-      _errorMessage = 'Failed to logout';
-      notifyListeners();
-    }
+  Future<bool> logout() async {
+    _isLoading = true;
+    notifyListeners();
+
+    final success = await _authController.logout();
+
+    _isLoading = false;
+    notifyListeners();
+
+    return success;
   }
 }

@@ -52,10 +52,29 @@ class AuthRepository {
 
   // Refresh Token
   Future<ApiResponse<AuthResponse>> refreshToken(String refreshToken) async {
-    return await _apiClient.post<AuthResponse>(
-      ApiConfig.refreshToken,
-      data: {'refresh_token': refreshToken},
-      fromJsonT: (json) => AuthResponse.fromJson(json),
-    );
+    try {
+      final response = await _apiClient.post<AuthResponse>(
+        ApiConfig.refreshToken,
+        data: {'refresh_token': refreshToken},
+        fromJsonT: (json) => AuthResponse.fromJson(json),
+      );
+      return response;
+    } catch (e) {
+      return ApiResponse.error(message: 'Refresh failed: ${e.toString()}');
+    }
+  }
+
+  // Logout
+  Future<ApiResponse<void>> logout(String refreshToken) async {
+    try {
+      final response = await _apiClient.post<AuthResponse>(
+        ApiConfig.logout,
+        data: {'refresh_token': refreshToken},
+        fromJsonT: null,
+      );
+      return response;
+    } catch (e) {
+      return ApiResponse.error(message: 'Logout failed: ${e.toString()}');
+    }
   }
 }

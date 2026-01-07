@@ -56,7 +56,7 @@ class CoupleCard extends StatelessWidget {
                 children: [
                   _buildAvatar(
                     context,
-                    data.partnerAvatar,
+                    data.partnerAvatar ?? '',
                     theme.partnerBorderColor,
                   ),
                   Icon(
@@ -64,12 +64,16 @@ class CoupleCard extends StatelessWidget {
                     color: theme.heartIconColor,
                     size: context.space(AppDimensions.iconXL),
                   ),
-                  _buildAvatar(context, data.yourAvatar, theme.yourBorderColor),
+                  _buildAvatar(
+                    context,
+                    data.yourAvatar ?? '',
+                    theme.yourBorderColor,
+                  ),
                 ],
               ),
               ResponsiveHelper.verticalSpace(context, AppDimensions.spaceM),
               Text(
-                "${data.partnerName}      &      ${data.yourName}",
+                "${data.yourName}      &      ${data.partnerName}",
                 style: TextStyle(
                   color: theme.textPrimaryColor,
                   fontSize: context.sp(AppDimensions.fontL),

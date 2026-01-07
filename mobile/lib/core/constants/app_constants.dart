@@ -5,26 +5,40 @@ class AppConstants {
 
 /// Error Messages
 class ErrorMessages {
+  // =====================
+  // Validation Errors
+  // =====================
   static const String allFieldsRequired = 'All fields are required';
   static const String invalidEmail = 'Please enter a valid email';
+  static const String shortPassword = 'Password must be at least 6 characters';
   static const String weakPassword =
       'Password must contain uppercase, lowercase, number and special character';
-  static const String shortPassword = 'Password must be at least 6 characters';
-  static const String emailExists = 'Email already exists';
-  static const String networkError =
-      'Network error. Please check your connection.';
-  static const String serverError = 'Server error occurred';
-  static const String unknownError = 'An unexpected error occurred';
-  static const String connectionTimeout =
-      'Connection timeout. Please check your internet.';
-  static const String noInternet =
-      'No internet connection. Please check your network.';
-  static const String notAuthenticated = 'Not authenticated';
+
+  // =====================
+  // Authentication Errors
+  // =====================
   static const String loginFailed = 'Login failed';
   static const String registrationFailed = 'Registration failed';
   static const String invalidCredentials = 'Invalid email or password';
   static const String accountNotFound = 'Account not found';
   static const String accountInactive = 'Account is inactive';
+  static const String emailExists = 'Email already exists';
+  static const String notAuthenticated = 'Not authenticated';
+  static const String refreshTokenNotFound =
+      'Refresh token not found. Please login again.';
+
+  // =====================
+  // Network & Server Errors
+  // =====================
+  static const String noInternet =
+      'No internet connection. Please check your network.';
+  static const String networkError =
+      'Network error. Please check your connection.';
+  static const String connectionTimeout =
+      'Connection timeout. Please check your internet.';
+  static const String serverError = 'Server error occurred';
+  static const String unknownError = 'An unexpected error occurred';
+  static const String sessionExpired = 'Session expired. Please login again.';
 }
 
 /// Success Messages
