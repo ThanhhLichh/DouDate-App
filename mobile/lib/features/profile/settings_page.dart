@@ -13,6 +13,7 @@ import 'widgets/settings_item.dart';
 import 'widgets/logout_button.dart';
 import 'widgets/settings_skeleton.dart';
 import 'settings_controller.dart';
+import '../../features/auth/auth_controller.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -330,29 +331,16 @@ class _SettingsPageState extends State<SettingsPage> {
           ),
           TextButton(
             onPressed: () async {
-              Navigator.pop(context); // Close dialog first
-
-              // Show loading indicator
-              if (!mounted) return;
-              showDialog(
-                context: context,
-                barrierDismissible: false,
-                builder: (context) =>
-                    const Center(child: CircularProgressIndicator()),
-              );
-
-              // Perform logout
-              final success = await controller.logout();
-
-              // Close loading dialog
-              if (!context.mounted) return;
               Navigator.pop(context);
 
+              final authController = context.read<AuthController>();
+              final success = await authController.logout();
+
+              if (!context.mounted) return;
+
               if (success) {
-                if (!context.mounted) return;
                 context.go('/login');
               } else {
-                if (!context.mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
                     content: Text('Logout failed. Please try again.'),

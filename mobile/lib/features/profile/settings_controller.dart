@@ -9,7 +9,6 @@ import '../../features/auth/auth_controller.dart';
 class SettingsController extends ChangeNotifier {
   final StorageService _storageService = StorageService();
   final SettingsRepository _repository = SettingsRepository();
-  final AuthController _authController = AuthController();
   final ImagePicker _imagePicker = ImagePicker();
 
   bool _isLoading = false;
@@ -237,18 +236,5 @@ class SettingsController extends ChangeNotifier {
       notifyListeners();
       return false;
     }
-  }
-
-  // Logout
-  Future<bool> logout() async {
-    _isLoading = true;
-    notifyListeners();
-
-    final success = await _authController.logout();
-
-    _isLoading = false;
-    notifyListeners();
-
-    return success;
   }
 }

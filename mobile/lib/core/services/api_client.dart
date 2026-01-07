@@ -203,7 +203,9 @@ class ApiClient {
     T Function(dynamic)? fromJsonT,
   ) {
     // Success status codes
-    if (response.statusCode! >= 200 && response.statusCode! < 300) {
+    if (response.statusCode == 200 ||
+        response.statusCode == 201 ||
+        response.statusCode == 204) {
       final data = response.data;
 
       // Case 1: Response là object trực tiếp (login, register, couple check)
