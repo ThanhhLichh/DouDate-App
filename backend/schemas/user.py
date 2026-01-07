@@ -59,7 +59,8 @@ class UserMeResponse(BaseModel):
     partner_name: Optional[str]
 
 class UserMeUpdate(BaseModel):
-    full_name: Optional[str]
-    avatar_url: Optional[str]
-    birth_date: Optional[date]
-    gender: Optional[str]
+    full_name: Optional[str] = None
+    avatar_url: Optional[str] = None
+    birth_date: Optional[date] = None
+    gender: Optional[str] = None
+
