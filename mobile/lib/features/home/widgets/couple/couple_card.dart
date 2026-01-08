@@ -1,11 +1,11 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../../core/utils/responsive_helper.dart';
-import '../../../core/constants/app_dimensions.dart';
-import '../../../core/providers/dashboard_theme_provider.dart';
-import '../../../core/theme/theme_constants.dart';
-import '../models/home_models.dart';
+import '../../../../core/utils/responsive_helper.dart';
+import '../../../../core/constants/app_dimensions.dart';
+import '../../../../core/providers/dashboard_theme_provider.dart';
+import '../../../../core/theme/theme_constants.dart';
+import '../../models/home_models.dart';
 
 class CoupleCard extends StatelessWidget {
   final CoupleDashboard data;

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import '../../../core/widgets/skeleton.dart';
-import '../../../core/utils/responsive_helper.dart';
-import '../../../core/constants/app_dimensions.dart';
+import '../../../../core/widgets/skeleton.dart';
+import '../../../../core/utils/responsive_helper.dart';
+import '../../../../core/constants/app_dimensions.dart';
 
 class HomePageSkeleton extends StatelessWidget {
   const HomePageSkeleton({super.key});

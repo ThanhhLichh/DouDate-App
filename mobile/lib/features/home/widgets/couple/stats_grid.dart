@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import '../../../core/utils/responsive_helper.dart';
-import '../../../core/constants/app_dimensions.dart';
-import '../models/home_models.dart';
+import '../../../../core/utils/responsive_helper.dart';
+import '../../../../core/constants/app_dimensions.dart';
+import '../../models/home_models.dart';
 import 'stat_item_card.dart';
 
 class StatsGrid extends StatelessWidget {

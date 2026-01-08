@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../../core/utils/responsive_helper.dart';
-import '../../../core/constants/app_dimensions.dart';
+import '../../../../core/utils/responsive_helper.dart';
+import '../../../../core/constants/app_dimensions.dart';
 
 class QuoteCard extends StatelessWidget {
   final String quote;
