@@ -9,6 +9,8 @@ from routers.moments import router as moments_router
 from routers.memories import router as memories_router
 from routers.users import router as users_router
 from routers.qr_socket import router as qr_socket_router
+from fastapi.middleware.cors import CORSMiddleware
+
 
 app = FastAPI(
     title=settings.APP_NAME,
@@ -28,3 +30,11 @@ app.include_router(qr_socket_router)
 @app.get("/health")
 def health_check():
     return {"status": "ok"}
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
