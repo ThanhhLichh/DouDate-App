@@ -5,9 +5,11 @@ import '../../core/utils/responsive_helper.dart';
 import '../../core/constants/app_dimensions.dart';
 import '../../core/providers/dashboard_theme_provider.dart';
 import '../auth/auth_controller.dart';
+import 'home_controller.dart';
 import 'widgets/single/qr_code_card.dart';
 import 'widgets/single/scan_qr_button.dart';
 import 'widgets/single/background_decoration.dart';
+import 'widgets/single/single_page_skeleton.dart';
 
 class HomeSinglePage extends StatefulWidget {
   const HomeSinglePage({super.key});
@@ -18,6 +20,22 @@ class HomeSinglePage extends StatefulWidget {
 
 class _HomeSinglePageState extends State<HomeSinglePage> {
   bool _isLoggingOut = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Generate QR code khi page load
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<HomeController>().generateQRCode();
+    });
+  }
+
+  @override
+  void dispose() {
+    // Clear QR data khi rời khỏi page
+    context.read<HomeController>().clearQRData();
+    super.dispose();
+  }
 
   Future<void> _handleLogout() async {
     setState(() {
@@ -50,6 +68,7 @@ class _HomeSinglePageState extends State<HomeSinglePage> {
   Widget build(BuildContext context) {
     final themeProvider = context.watch<DashboardThemeProvider>();
     final theme = themeProvider.currentTheme;
+    final homeController = context.watch<HomeController>();
 
     return Scaffold(
       backgroundColor: theme.primaryColor,
@@ -60,74 +79,11 @@ class _HomeSinglePageState extends State<HomeSinglePage> {
             BackgroundDecoration(theme: theme),
 
             // Main content
-            Center(
-              child: Container(
-                constraints: BoxConstraints(
-                  maxWidth: ResponsiveHelper.maxContentWidth(context),
-                ),
-                child: SingleChildScrollView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  padding: ResponsiveHelper.symmetric(
-                    context: context,
-                    horizontal: context.isMobile ? 5 : 8,
-                    vertical: 3,
-                  ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      ResponsiveHelper.verticalSpace(
-                        context,
-                        AppDimensions.spaceXL,
-                      ),
+            homeController.isLoadingQR
+                ? const SinglePageSkeleton()
+                : _buildMainContent(context, theme, homeController),
 
-                      // Title Section
-                      _buildTitleSection(context, theme),
-
-                      ResponsiveHelper.verticalSpace(
-                        context,
-                        AppDimensions.spaceXL,
-                      ),
-
-                      // QR Code Card
-                      QRCodeCard(theme: theme),
-
-                      ResponsiveHelper.verticalSpace(
-                        context,
-                        AppDimensions.spaceXL,
-                      ),
-
-                      // Scan QR Button
-                      ScanQRButton(
-                        theme: theme,
-                        onTap: () {
-                          // TODO: Open QR scanner
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('QR Scanner coming soon!'),
-                            ),
-                          );
-                        },
-                      ),
-
-                      ResponsiveHelper.verticalSpace(
-                        context,
-                        AppDimensions.spaceL,
-                      ),
-
-                      // Back to Login Button
-                      _buildBackToLoginButton(context, theme),
-
-                      ResponsiveHelper.verticalSpace(
-                        context,
-                        AppDimensions.spaceL,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-
-            // Loading overlay
+            // Loading overlay for logout
             if (_isLoggingOut)
               Container(
                 color: Colors.black.withOpacity(0.3),
@@ -136,6 +92,66 @@ class _HomeSinglePageState extends State<HomeSinglePage> {
                 ),
               ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMainContent(
+    BuildContext context,
+    dynamic theme,
+    HomeController homeController,
+  ) {
+    return Center(
+      child: Container(
+        constraints: BoxConstraints(
+          maxWidth: ResponsiveHelper.maxContentWidth(context),
+        ),
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: ResponsiveHelper.symmetric(
+            context: context,
+            horizontal: context.isMobile ? 5 : 8,
+            vertical: 3,
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              ResponsiveHelper.verticalSpace(context, AppDimensions.spaceXL),
+
+              // Title Section
+              _buildTitleSection(context, theme),
+
+              ResponsiveHelper.verticalSpace(context, AppDimensions.spaceXL),
+
+              // QR Code Card với data thật
+              QRCodeCard(
+                theme: theme,
+                qrData: homeController.qrCodeData,
+                onRefresh: () => homeController.refreshQRCode(),
+              ),
+
+              ResponsiveHelper.verticalSpace(context, AppDimensions.spaceXL),
+
+              // Scan QR Button
+              ScanQRButton(
+                theme: theme,
+                onTap: () {
+                  // TODO: Open QR scanner
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('QR Scanner coming soon!')),
+                  );
+                },
+              ),
+
+              ResponsiveHelper.verticalSpace(context, AppDimensions.spaceL),
+
+              // Back to Login Button
+              _buildBackToLoginButton(context, theme),
+
+              ResponsiveHelper.verticalSpace(context, AppDimensions.spaceL),
+            ],
+          ),
         ),
       ),
     );

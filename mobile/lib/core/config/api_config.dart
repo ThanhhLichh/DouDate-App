@@ -22,6 +22,9 @@ class ApiConfig {
   static const String coupleStats = '/couple/stats';
   static const String breakConnection = '/couple/break';
 
+  // QR Code Endpoints
+  static const String generateQRCode = '/qr/create';
+
   // Timeouts
   static const int connectTimeout = 30000; // 30 seconds
   static const int receiveTimeout = 30000;

@@ -4,6 +4,7 @@ import '../../../core/config/api_config.dart';
 import '../../../core/models/api_response.dart';
 import '../../../core/services/api_client.dart';
 import '../models/home_models.dart';
+import '../models/qr_models.dart';
 
 class HomeRepository {
   final ApiClient _apiClient = ApiClient();
@@ -88,6 +89,26 @@ class HomeRepository {
       } else {
         return ApiResponse.error(
           message: response.message ?? 'Failed to load stats',
+        );
+      }
+    } catch (e) {
+      return ApiResponse.error(message: 'An error occurred: ${e.toString()}');
+    }
+  }
+
+  // Create QR Code
+  Future<ApiResponse<QRCodeData>> createQRCode(String token) async {
+    try {
+      final response = await _apiClient.post<Map<String, dynamic>>(
+        ApiConfig.generateQRCode,
+        token: token,
+      );
+
+      if (response.success && response.data != null) {
+        return ApiResponse.success(data: QRCodeData.fromJson(response.data!));
+      } else {
+        return ApiResponse.error(
+          message: response.message ?? 'Failed to create QR code',
         );
       }
     } catch (e) {
