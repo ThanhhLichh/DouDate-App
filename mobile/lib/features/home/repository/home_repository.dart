@@ -5,6 +5,7 @@ import '../../../core/models/api_response.dart';
 import '../../../core/services/api_client.dart';
 import '../models/home_models.dart';
 import '../models/qr_models.dart';
+import '../models/qr_scan_models.dart';
 
 class HomeRepository {
   final ApiClient _apiClient = ApiClient();
@@ -109,6 +110,68 @@ class HomeRepository {
       } else {
         return ApiResponse.error(
           message: response.message ?? 'Failed to create QR code',
+        );
+      }
+    } catch (e) {
+      return ApiResponse.error(message: 'An error occurred: ${e.toString()}');
+    }
+  }
+
+  // Scan QR Code
+  Future<ApiResponse<ScanQRResponse>> scanQRCode(
+    String token,
+    String qrToken,
+  ) async {
+    try {
+      final request = ScanQRRequest(token: qrToken);
+      final response = await _apiClient.post<Map<String, dynamic>>(
+        ApiConfig.scanQRCode,
+        data: request.toJson(),
+        token: token,
+      );
+
+      if (response.success && response.data != null) {
+        return ApiResponse.success(
+          message: 'QR scanned successfully',
+          data: ScanQRResponse.fromJson(response.data!),
+        );
+      } else {
+        return ApiResponse.error(
+          message: response.message ?? 'Failed to scan QR code',
+        );
+      }
+    } catch (e) {
+      return ApiResponse.error(message: 'An error occurred: ${e.toString()}');
+    }
+  }
+
+  // Respond to QR Code (Accept/Reject)
+  Future<ApiResponse<CoupleResponse?>> respondQRCode(
+    String token,
+    String qrToken,
+    String action,
+  ) async {
+    try {
+      final request = RespondQRRequest(token: qrToken, action: action);
+      final response = await _apiClient.post<Map<String, dynamic>?>(
+        ApiConfig.respondQRCode,
+        data: request.toJson(),
+        token: token,
+      );
+
+      if (response.success) {
+        if (response.data != null) {
+          return ApiResponse.success(
+            message: 'Request accepted successfully',
+            data: CoupleResponse.fromJson(response.data!),
+          );
+        } else {
+          // Reject case - no data returned
+          return ApiResponse.success(message: 'Request rejected', data: null);
+        }
+      } else {
+        return ApiResponse.error(
+          message: response.message ?? 'Failed to respond',
         );
       }
     } catch (e) {

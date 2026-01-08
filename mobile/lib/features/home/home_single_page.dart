@@ -10,6 +10,7 @@ import 'widgets/single/qr_code_card.dart';
 import 'widgets/single/scan_qr_button.dart';
 import 'widgets/single/background_decoration.dart';
 import 'widgets/single/single_page_skeleton.dart';
+import 'qr_scanner_page.dart';
 
 class HomeSinglePage extends StatefulWidget {
   const HomeSinglePage({super.key});
@@ -26,13 +27,39 @@ class _HomeSinglePageState extends State<HomeSinglePage> {
     super.initState();
     // Generate QR code khi page load
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<HomeController>().generateQRCode();
+      final homeController = context.read<HomeController>();
+
+      // Generate QR code
+      homeController.generateQRCode();
+
+      // Connect to WebSocket để nhận thông báo khi có người scan
+      homeController.connectQRWebSocket();
+
+      // Listen to WebSocket events
+      homeController.qrEventStream?.listen((event) {
+        if (event.event == 'QR_SCANNED' && mounted) {
+          // Show notification that someone scanned the QR
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Someone scanned your QR code! 🎉'),
+              backgroundColor: Colors.green,
+              duration: const Duration(seconds: 3),
+              action: SnackBarAction(
+                label: 'OK',
+                textColor: Colors.white,
+                onPressed: () {},
+              ),
+            ),
+          );
+        }
+      });
     });
   }
 
   @override
   void dispose() {
-    // Clear QR data khi rời khỏi page
+    // Disconnect WebSocket and clear QR data
+    context.read<HomeController>().disconnectQRWebSocket();
     context.read<HomeController>().clearQRData();
     super.dispose();
   }
@@ -75,15 +102,10 @@ class _HomeSinglePageState extends State<HomeSinglePage> {
       body: SafeArea(
         child: Stack(
           children: [
-            // Background decorations
             BackgroundDecoration(theme: theme),
-
-            // Main content
             homeController.isLoadingQR
                 ? const SinglePageSkeleton()
                 : _buildMainContent(context, theme, homeController),
-
-            // Loading overlay for logout
             if (_isLoggingOut)
               Container(
                 color: Colors.black.withOpacity(0.3),
@@ -118,37 +140,37 @@ class _HomeSinglePageState extends State<HomeSinglePage> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               ResponsiveHelper.verticalSpace(context, AppDimensions.spaceXL),
-
-              // Title Section
               _buildTitleSection(context, theme),
-
               ResponsiveHelper.verticalSpace(context, AppDimensions.spaceXL),
-
-              // QR Code Card với data thật
               QRCodeCard(
                 theme: theme,
                 qrData: homeController.qrCodeData,
                 onRefresh: () => homeController.refreshQRCode(),
               ),
-
               ResponsiveHelper.verticalSpace(context, AppDimensions.spaceXL),
 
-              // Scan QR Button
+              // Updated Scan QR Button with navigation
               ScanQRButton(
                 theme: theme,
-                onTap: () {
-                  // TODO: Open QR scanner
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('QR Scanner coming soon!')),
+                onTap: () async {
+                  // Navigate to QR Scanner
+                  final result = await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const QRScannerPage(),
+                    ),
                   );
+
+                  // If successfully connected, result will be true
+                  if (result == true && mounted) {
+                    // Refresh dashboard or navigate
+                    await homeController.fetchDashboardData();
+                  }
                 },
               ),
 
               ResponsiveHelper.verticalSpace(context, AppDimensions.spaceL),
-
-              // Back to Login Button
               _buildBackToLoginButton(context, theme),
-
               ResponsiveHelper.verticalSpace(context, AppDimensions.spaceL),
             ],
           ),

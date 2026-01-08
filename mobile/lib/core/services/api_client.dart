@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import '../config/api_config.dart';
 import '../models/api_response.dart';
 import 'storage_service.dart';
+import '../constants/app_constants.dart';
 
 class ApiClient {
   late final Dio _dio;
@@ -265,13 +266,11 @@ class ApiClient {
         case DioExceptionType.connectionTimeout:
         case DioExceptionType.sendTimeout:
         case DioExceptionType.receiveTimeout:
-          return ApiResponse.error(
-            message: 'Connection timeout. Please check your internet.',
-          );
+          return ApiResponse.error(message: ErrorMessages.noInternet);
 
         case DioExceptionType.badResponse:
           final data = error.response?.data;
-          String message = 'Server error occurred';
+          String message = ErrorMessages.serverError;
           Map<String, dynamic>? errors;
 
           if (data is Map<String, dynamic>) {
@@ -299,12 +298,10 @@ class ApiClient {
           return ApiResponse.error(message: 'Request cancelled');
 
         case DioExceptionType.connectionError:
-          return ApiResponse.error(
-            message: 'No internet connection. Please check your network.',
-          );
+          return ApiResponse.error(message: ErrorMessages.noInternet);
 
         default:
-          return ApiResponse.error(message: 'Network error. Please try again.');
+          return ApiResponse.error(message: ErrorMessages.networkError);
       }
     }
     return ApiResponse.error(

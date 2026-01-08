@@ -5,10 +5,13 @@ import 'repository/home_repository.dart';
 import 'dart:async';
 import 'models/qr_models.dart';
 import '../../core/constants/app_constants.dart';
+import 'models/qr_scan_models.dart';
+import '../../core/services/qr_webscoket_service.dart';
 
 class HomeController extends ChangeNotifier {
   final StorageService _storageService = StorageService();
   final HomeRepository _homeRepository = HomeRepository();
+  final QRWebSocketService _qrWebSocketService = QRWebSocketService();
 
   // Dashboard Data
   bool _isLoading = false;
@@ -32,10 +35,21 @@ class HomeController extends ChangeNotifier {
     notifyListeners();
   }
 
+  // Scan QR WebSocket Service
+  ScanQRResponse? _scannedQRData;
+  bool _isScanning = false;
+  bool _isResponding = false;
+
+  ScanQRResponse? get scannedQRData => _scannedQRData;
+  bool get isScanning => _isScanning;
+  bool get isResponding => _isResponding;
+  Stream<QRWebSocketEvent>? get qrEventStream =>
+      _qrWebSocketService.eventStream;
+
   // Dispose timer khi controller bị dispose
   @override
   void dispose() {
-    _qrTimer?.cancel();
+    _qrWebSocketService.disconnect();
     super.dispose();
   }
 
@@ -177,6 +191,106 @@ class HomeController extends ChangeNotifier {
   Future<void> refreshQRCode() async {
     _qrTimer?.cancel();
     await generateQRCode();
+  }
+
+  // Connect to QR WebSocket
+  Future<void> connectQRWebSocket() async {
+    try {
+      final token = await _storageService.getToken();
+      if (token == null) return;
+
+      await _qrWebSocketService.connect(token);
+      print('QR WebSocket connected');
+    } catch (e) {
+      print('Failed to connect QR WebSocket: $e');
+    }
+  }
+
+  // Disconnect QR WebSocket
+  void disconnectQRWebSocket() {
+    _qrWebSocketService.disconnect();
+  }
+
+  // Scan QR Code
+  Future<bool> scanQRCode(String qrToken) async {
+    _isScanning = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final token = await _storageService.getToken();
+      if (token == null) {
+        _errorMessage = 'Not authenticated';
+        _isScanning = false;
+        notifyListeners();
+        return false;
+      }
+
+      final response = await _homeRepository.scanQRCode(token, qrToken);
+
+      if (response.success && response.data != null) {
+        _scannedQRData = response.data;
+        _isScanning = false;
+        notifyListeners();
+        return true;
+      } else {
+        _errorMessage = response.message ?? 'Failed to scan QR code';
+        _isScanning = false;
+        notifyListeners();
+        return false;
+      }
+    } catch (e) {
+      _errorMessage = 'An error occurred: ${e.toString()}';
+      _isScanning = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  // Respond to QR Code (Accept/Reject)
+  Future<CoupleResponse?> respondQRCode(String qrToken, String action) async {
+    _isResponding = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final token = await _storageService.getToken();
+      if (token == null) {
+        _errorMessage = ErrorMessages.notAuthenticated;
+        _isResponding = false;
+        notifyListeners();
+        return null;
+      }
+
+      final response = await _homeRepository.respondQRCode(
+        token,
+        qrToken,
+        action,
+      );
+
+      if (response.success) {
+        _isResponding = false;
+        _scannedQRData = null; // Clear scanned data
+        notifyListeners();
+        return response.data;
+      } else {
+        _errorMessage = response.message ?? 'Failed to respond';
+        _isResponding = false;
+        notifyListeners();
+        return null;
+      }
+    } catch (e) {
+      _errorMessage = 'An error occurred: ${e.toString()}';
+      _isResponding = false;
+      notifyListeners();
+      return null;
+    }
+  }
+
+  // Clear scanned QR data
+  void clearScannedQRData() {
+    _scannedQRData = null;
+    notifyListeners();
   }
 
   // Clear QR data when user leaves

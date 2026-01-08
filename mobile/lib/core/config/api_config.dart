@@ -4,6 +4,9 @@ class ApiConfig {
   // static const String baseUrl = 'http://10.0.2.2:8000'; // Android Emulator
   // static const String baseUrl = 'https://your-domain.com'; // Production
 
+  // WebSocket URL
+  static String get wsUrl => baseUrl.replaceFirst('http', 'ws');
+
   // --------------- API Endpoints ---------------
 
   // Auth Endpoints
@@ -24,6 +27,11 @@ class ApiConfig {
 
   // QR Code Endpoints
   static const String generateQRCode = '/qr/create';
+  static const String scanQRCode = '/qr/scan';
+  static const String respondQRCode = '/qr/respond';
+
+  // WebSocket Endpoints
+  static const String qrStatusWebSocket = '/ws/qr-status';
 
   // Timeouts
   static const int connectTimeout = 30000; // 30 seconds
