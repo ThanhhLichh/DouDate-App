@@ -1,38 +1,28 @@
 import 'dart:io';
+import 'package:dio/dio.dart';
+
 import '../../../core/services/api_client.dart';
 import '../../../core/models/api_response.dart';
 import '../models/user_profile.dart';
+import '../../../core/config/api_config.dart';
 
 class SettingsRepository {
   final ApiClient _apiClient = ApiClient();
 
   // Get User Profile
   Future<ApiResponse<UserProfile>> getUserProfile(String token) async {
-    // Mock response for now
-    await Future.delayed(const Duration(seconds: 1));
-
-    return ApiResponse.success(
-      message: 'Profile loaded successfully',
-      data: UserProfile(
-        id: '1',
-        name: 'Emma Johnson',
-        birthday: 'March 15, 1998',
-        gender: 'Female',
-        avatarUrl: null,
-        isConnected: true,
-        partnerName: 'Alex Chen',
-        email: 'emma.johnson@example.com',
-      ),
-    );
-
-    // When API is ready, use this:
-    /*
-    return await _apiClient.get<UserProfile>(
-      '/users/profile',
-      token: token,
-      fromJsonT: (json) => UserProfile.fromJson(json),
-    );
-    */
+    try {
+      final response = await _apiClient.get<UserProfile>(
+        ApiConfig.getUser,
+        token: token,
+        fromJsonT: (json) => UserProfile.fromJson(json),
+      );
+      return response;
+    } catch (e) {
+      return ApiResponse.error(
+        message: 'Get user profile failed: ${e.toString()}',
+      );
+    }
   }
 
   // Update User Profile
@@ -40,46 +30,44 @@ class SettingsRepository {
     String token,
     Map<String, dynamic> data,
   ) async {
-    // Mock response
-    await Future.delayed(const Duration(milliseconds: 500));
-    return ApiResponse.success(message: 'Profile updated successfully');
-
-    // When API is ready:
-    /*
-    return await _apiClient.put<UserProfile>(
-      '/users/profile',
-      token: token,
-      data: data,
-      fromJsonT: (json) => UserProfile.fromJson(json),
-    );
-    */
+    try {
+      final response = await _apiClient.put<UserProfile>(
+        ApiConfig.updateUser,
+        token: token,
+        data: data,
+        fromJsonT: (json) => UserProfile.fromJson(json),
+      );
+      return response;
+    } catch (e) {
+      return ApiResponse.error(
+        message: 'Update profile failed: ${e.toString()}',
+      );
+    }
   }
 
   // Update Avatar
   Future<ApiResponse<String>> updateAvatar(String token, File imageFile) async {
-    // Mock response
-    await Future.delayed(const Duration(seconds: 1));
-    return ApiResponse.success(
-      message: 'Avatar updated successfully',
-      data: 'https://example.com/avatar.jpg',
-    );
+    try {
+      final formData = FormData.fromMap({
+        'avatar': await MultipartFile.fromFile(
+          imageFile.path,
+          filename: imageFile.path.split('/').last,
+        ),
+      });
 
-    // When API is ready, implement multipart upload:
-    /*
-    final formData = FormData.fromMap({
-      'avatar': await MultipartFile.fromFile(
-        imageFile.path,
-        filename: 'avatar.jpg',
-      ),
-    });
+      final response = await _apiClient.put<String>(
+        ApiConfig.updateUser,
+        token: token,
+        data: formData,
+        fromJsonT: (json) => json['avatar_url'] as String,
+      );
 
-    return await _apiClient.post<String>(
-      '/users/avatar',
-      token: token,
-      data: formData,
-      fromJsonT: (json) => json['avatar_url'] as String,
-    );
-    */
+      return response;
+    } catch (e) {
+      return ApiResponse.error(
+        message: 'Update avatar failed: ${e.toString()}',
+      );
+    }
   }
 
   // Update Notification Settings
@@ -103,17 +91,17 @@ class SettingsRepository {
 
   // Break Connection
   Future<ApiResponse<void>> breakConnection(String token) async {
-    // Mock response
-    await Future.delayed(const Duration(seconds: 1));
-    return ApiResponse.success(message: 'Connection broken successfully');
-
-    // When API is ready:
-    /*
-    return await _apiClient.delete<void>(
-      '/users/connection',
-      token: token,
-    );
-    */
+    try {
+      final response = await _apiClient.post<void>(
+        ApiConfig.breakConnection,
+        token: token,
+      );
+      return response;
+    } catch (e) {
+      return ApiResponse.error(
+        message: 'Break connection failed: ${e.toString()}',
+      );
+    }
   }
 
   // Delete Account

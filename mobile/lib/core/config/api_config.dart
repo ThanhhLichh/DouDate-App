@@ -15,10 +15,12 @@ class ApiConfig {
 
   // User Endpoints
   static const String getUser = '/users/me';
+  static const String updateUser = '/users/me';
 
   // Couple Endpoints
   static const String checkCouple = '/couple/me';
   static const String coupleStats = '/couple/stats';
+  static const String breakConnection = '/couple/break';
 
   // Timeouts
   static const int connectTimeout = 30000; // 30 seconds

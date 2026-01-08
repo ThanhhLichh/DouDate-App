@@ -4,7 +4,8 @@ import 'package:image_picker/image_picker.dart';
 import '../../core/services/storage_service.dart';
 import 'models/user_profile.dart';
 import 'repository/settings_repository.dart';
-import '../../features/auth/auth_controller.dart';
+// import '../../features/auth/auth_controller.dart';
+import '../../core/constants/app_constants.dart';
 
 class SettingsController extends ChangeNotifier {
   final StorageService _storageService = StorageService();
@@ -65,7 +66,7 @@ class SettingsController extends ChangeNotifier {
   // Update Name
   Future<bool> updateName(String newName) async {
     if (newName.trim().isEmpty) {
-      _errorMessage = 'Name cannot be empty';
+      _errorMessage = ErrorMessages.nameCannotBeEmpty;
       notifyListeners();
       return false;
     }
@@ -75,11 +76,11 @@ class SettingsController extends ChangeNotifier {
       if (token == null) return false;
 
       final response = await _repository.updateProfile(token, {
-        'name': newName,
+        'full_name': newName,
       });
 
-      if (response.success) {
-        _userProfile = _userProfile?.copyWith(name: newName);
+      if (response.success && response.data != null) {
+        _userProfile = response.data;
         notifyListeners();
         return true;
       } else {
@@ -88,7 +89,7 @@ class SettingsController extends ChangeNotifier {
         return false;
       }
     } catch (e) {
-      _errorMessage = 'An error occurred. Please try again.';
+      _errorMessage = ErrorMessages.unknownError;
       notifyListeners();
       return false;
     }
@@ -101,13 +102,13 @@ class SettingsController extends ChangeNotifier {
       if (token == null) return false;
 
       final response = await _repository.updateProfile(token, {
-        'birthday': birthday.toIso8601String(),
+        'birth_date': birthday.toIso8601String().split(
+          'T',
+        )[0], // Format: YYYY-MM-DD
       });
 
-      if (response.success) {
-        _userProfile = _userProfile?.copyWith(
-          birthday: birthday.toIso8601String(),
-        );
+      if (response.success && response.data != null) {
+        _userProfile = response.data;
         notifyListeners();
         return true;
       } else {
@@ -116,7 +117,7 @@ class SettingsController extends ChangeNotifier {
         return false;
       }
     } catch (e) {
-      _errorMessage = 'An error occurred. Please try again.';
+      _errorMessage = ErrorMessages.unknownError;
       notifyListeners();
       return false;
     }
@@ -132,8 +133,8 @@ class SettingsController extends ChangeNotifier {
         'gender': gender,
       });
 
-      if (response.success) {
-        _userProfile = _userProfile?.copyWith(gender: gender);
+      if (response.success && response.data != null) {
+        _userProfile = response.data;
         notifyListeners();
         return true;
       } else {
@@ -142,7 +143,7 @@ class SettingsController extends ChangeNotifier {
         return false;
       }
     } catch (e) {
-      _errorMessage = 'An error occurred. Please try again.';
+      _errorMessage = ErrorMessages.unknownError;
       notifyListeners();
       return false;
     }
@@ -180,7 +181,7 @@ class SettingsController extends ChangeNotifier {
         return false;
       }
     } catch (e) {
-      _errorMessage = 'An error occurred. Please try again.';
+      _errorMessage = ErrorMessages.unknownError;
       _isLoading = false;
       notifyListeners();
       return false;
@@ -216,24 +217,27 @@ class SettingsController extends ChangeNotifier {
 
       final response = await _repository.breakConnection(token);
 
+      print('Break connection response: ${response.success}');
+
       if (response.success) {
-        _userProfile = _userProfile?.copyWith(
-          isConnected: false,
-          partnerName: null,
-        );
+        // Chỉ cập nhật state local, không reload profile
+        _userProfile = _userProfile?.copyWith(partnerName: null);
         _isLoading = false;
         notifyListeners();
+        print('Break connection completed successfully');
         return true;
       } else {
         _errorMessage = response.message ?? 'Failed to break connection';
         _isLoading = false;
         notifyListeners();
+        print('Break connection failed: $_errorMessage');
         return false;
       }
     } catch (e) {
       _errorMessage = 'An error occurred. Please try again.';
       _isLoading = false;
       notifyListeners();
+      print('Break connection error: $e');
       return false;
     }
   }

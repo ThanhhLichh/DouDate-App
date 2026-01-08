@@ -39,6 +39,11 @@ class ErrorMessages {
   static const String serverError = 'Server error occurred';
   static const String unknownError = 'An unexpected error occurred';
   static const String sessionExpired = 'Session expired. Please login again.';
+
+  // =====================
+  // Profile Errors
+  // =====================
+  static const String nameCannotBeEmpty = 'Name cannot be empty';
 }
 
 /// Success Messages

@@ -4,7 +4,6 @@ class UserProfile {
   final String? birthday;
   final String? gender;
   final String? avatarUrl;
-  final bool isConnected;
   final String? partnerName;
   final String? email;
 
@@ -14,7 +13,6 @@ class UserProfile {
     this.birthday,
     this.gender,
     this.avatarUrl,
-    this.isConnected = false,
     this.partnerName,
     this.email,
   });
@@ -22,11 +20,13 @@ class UserProfile {
   factory UserProfile.fromJson(Map<String, dynamic> json) {
     return UserProfile(
       id: json['id'] ?? json['_id'] ?? '',
-      name: json['name'] ?? '',
-      birthday: json['birthday'],
+      name: json['full_name'] ?? json['name'] ?? '',
+      birthday: json['birth_date'] ?? json['birthday'],
       gender: json['gender'],
       avatarUrl: json['avatar_url'] ?? json['avatarUrl'],
-      isConnected: json['is_connected'] ?? json['isConnected'] ?? false,
+      // isConnected:
+      //     json['partner_name'] != null &&
+      //     (json['partner_name'] as String).isNotEmpty,
       partnerName: json['partner_name'] ?? json['partnerName'],
       email: json['email'],
     );
@@ -34,14 +34,10 @@ class UserProfile {
 
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
-      'name': name,
-      'birthday': birthday,
+      'full_name': name,
+      'birth_date': birthday,
       'gender': gender,
       'avatar_url': avatarUrl,
-      'is_connected': isConnected,
-      'partner_name': partnerName,
-      'email': email,
     };
   }
 
@@ -51,7 +47,6 @@ class UserProfile {
     String? birthday,
     String? gender,
     String? avatarUrl,
-    bool? isConnected,
     String? partnerName,
     String? email,
   }) {
@@ -61,7 +56,6 @@ class UserProfile {
       birthday: birthday ?? this.birthday,
       gender: gender ?? this.gender,
       avatarUrl: avatarUrl ?? this.avatarUrl,
-      isConnected: isConnected ?? this.isConnected,
       partnerName: partnerName ?? this.partnerName,
       email: email ?? this.email,
     );

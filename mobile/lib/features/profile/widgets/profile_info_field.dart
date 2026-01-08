@@ -5,7 +5,7 @@ import '../../../core/constants/app_dimensions.dart';
 class ProfileInfoField extends StatelessWidget {
   final String label;
   final String value;
-  final VoidCallback onEdit;
+  final VoidCallback? onEdit;
   final dynamic theme;
 
   const ProfileInfoField({
@@ -60,14 +60,16 @@ class ProfileInfoField extends StatelessWidget {
               ],
             ),
           ),
-          IconButton(
-            onPressed: onEdit,
-            icon: Icon(
-              Icons.edit_outlined,
-              size: context.space(AppDimensions.iconM),
-              color: theme.textSecondaryColor,
+
+          if (onEdit != null)
+            IconButton(
+              onPressed: onEdit,
+              icon: Icon(
+                Icons.edit_outlined,
+                size: context.space(AppDimensions.iconM),
+                color: theme.textSecondaryColor,
+              ),
             ),
-          ),
         ],
       ),
     );

@@ -125,10 +125,18 @@ class _SettingsPageState extends State<SettingsPage> {
 
                 ResponsiveHelper.verticalSpace(context, AppDimensions.spaceM),
 
+                ProfileInfoField(
+                  label: 'Email',
+                  value: controller.userProfile?.email ?? 'Loading...',
+                  onEdit: null,
+                  theme: theme,
+                ),
+
+                ResponsiveHelper.verticalSpace(context, AppDimensions.spaceM),
+
                 // Connection Status
                 ConnectionStatusCard(
                   partnerName: controller.userProfile?.partnerName,
-                  isConnected: controller.userProfile?.isConnected ?? false,
                   onBreakConnection: () =>
                       _showBreakConnectionDialog(context, controller),
                   theme: theme,
@@ -282,28 +290,53 @@ class _SettingsPageState extends State<SettingsPage> {
     SettingsController controller,
   ) {
     final theme = context.read<DashboardThemeProvider>().currentTheme;
+    // Lưu BuildContext của page, không phải của dialog
+    final pageContext = context;
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: const Text('Break Connection'),
         content: const Text(
           'Are you sure you want to break the connection? This action cannot be undone.',
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogContext),
             child: Text(
               'Cancel',
               style: TextStyle(color: theme.textSecondaryColor),
             ),
           ),
           TextButton(
-            onPressed: () {
-              controller.breakConnection();
-              Navigator.pop(context);
+            onPressed: () async {
+              Navigator.pop(dialogContext); // Đóng dialog
+
+              final success = await controller.breakConnection();
+              print('Break connection success: $success');
+              print('Page context mounted: ${pageContext.mounted}');
+
+              if (!pageContext.mounted) {
+                print('Context is not mounted!');
+                return;
+              }
+
+              if (success) {
+                print('Attempting to navigate to /home-single');
+                pageContext.go('/home-single');
+                print('Navigation called');
+              } else {
+                ScaffoldMessenger.of(pageContext).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      controller.errorMessage ?? 'Failed to break connection',
+                    ),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
             },
-            child: Text(
+            child: const Text(
               'Break Connection',
               style: TextStyle(color: Colors.red),
             ),

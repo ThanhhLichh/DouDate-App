@@ -4,14 +4,12 @@ import '../../../core/constants/app_dimensions.dart';
 
 class ConnectionStatusCard extends StatelessWidget {
   final String? partnerName;
-  final bool isConnected;
   final VoidCallback onBreakConnection;
   final dynamic theme;
 
   const ConnectionStatusCard({
     super.key,
     this.partnerName,
-    required this.isConnected,
     required this.onBreakConnection,
     required this.theme,
   });
@@ -45,7 +43,7 @@ class ConnectionStatusCard extends StatelessWidget {
             ),
             ResponsiveHelper.verticalSpace(context, AppDimensions.spaceS),
             Text(
-              isConnected && partnerName != null
+              partnerName != null
                   ? 'Connected with $partnerName'
                   : 'Not connected',
               style: TextStyle(
@@ -54,7 +52,7 @@ class ConnectionStatusCard extends StatelessWidget {
                 fontWeight: FontWeight.w500,
               ),
             ),
-            if (isConnected && partnerName != null) ...[
+            if (partnerName != null) ...[
               ResponsiveHelper.verticalSpace(context, AppDimensions.spaceM),
               SizedBox(
                 width: double.infinity,
