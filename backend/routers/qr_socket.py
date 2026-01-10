@@ -35,10 +35,21 @@ def get_user_id_from_token(token: str) -> int | None:
             settings.SECRET_KEY,
             algorithms=["HS256"],
         )
-        return int(payload.get("sub"))
+
+        # 1️⃣ Check subject (app)
+        if payload.get("sub") != "doudate-app":
+            return None
+
+        # 2️⃣ Lấy user_id ĐÚNG CHỖ
+        user_id = payload.get("user_id")
+        if not user_id:
+            return None
+
+        return int(user_id)
+
     except JWTError:
         return None
-
+    
 
 @router.websocket("/ws/qr-status")
 async def qr_status_ws(websocket: WebSocket, token: str):
