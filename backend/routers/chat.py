@@ -25,11 +25,32 @@ class ConnectionManager:
         self.active_connections.setdefault(couple_id, []).append(websocket)
 
     def disconnect(self, couple_id: int, websocket: WebSocket):
-        self.active_connections[couple_id].remove(websocket)
+        connections = self.active_connections.get(couple_id)
+        if not connections:
+            return
+
+        if websocket in connections:
+            connections.remove(websocket)
+
+        if not connections:
+            self.active_connections.pop(couple_id, None)
 
     async def broadcast(self, couple_id: int, message: dict):
-        for connection in self.active_connections.get(couple_id, []):
-            await connection.send_json(message)
+        connections = self.active_connections.get(couple_id, [])
+        alive = []
+
+        for ws in connections:
+            try:
+                await ws.send_json(message)
+                alive.append(ws)
+            except Exception:
+                pass  # socket chết
+
+        if alive:
+            self.active_connections[couple_id] = alive
+        else:
+            self.active_connections.pop(couple_id, None)
+
 
 
 manager = ConnectionManager()
