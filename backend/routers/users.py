@@ -55,6 +55,7 @@ def get_my_profile(
         partner_name = partner.full_name if partner else None
 
     return {
+        "id": user.id,
         "email": user.email,
         "full_name": user.full_name,
         "avatar_url": user.avatar_url,

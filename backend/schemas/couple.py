@@ -19,6 +19,7 @@ class CoupleMeResponse(BaseModel):
     couple: Optional[CoupleInfo] = None
 
 class CoupleStatsResponse(BaseModel):
+    couple_id: int
     your_name: Optional[str]
     your_avatar: Optional[str]
     partner_name: Optional[str]

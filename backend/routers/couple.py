@@ -115,12 +115,14 @@ def get_couple_stats(
     )
 
     return {
+        "couple_id": couple.id, 
+
         "your_name": your_user.full_name if your_user else None,
         "your_avatar": your_user.avatar_url if your_user else None,
         "partner_name": partner_user.full_name if partner_user else None,
         "partner_avatar": partner_user.avatar_url if partner_user else None,
         "start_date": couple.start_date,
-
+        
         "message_count": message_count,
         "moment_count": moment_count,
         "memory_count": memory_count,

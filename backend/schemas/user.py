@@ -51,6 +51,7 @@ class UserProfileUpdate(BaseModel):
     bio: Optional[str] = None
 
 class UserMeResponse(BaseModel):
+    id: int
     email: str
     full_name: str
     avatar_url: Optional[str]
