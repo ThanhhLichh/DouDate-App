@@ -8,6 +8,12 @@ from core.config import settings
 from models.couple import Couple
 from services.chat_service import save_message
 
+from typing import Dict, List
+from fastapi import WebSocket
+from starlette.websockets import WebSocketState
+
+import json
+from starlette.websockets import WebSocketDisconnect
 
 router = APIRouter()
 
@@ -18,39 +24,44 @@ router = APIRouter()
 
 class ConnectionManager:
     def __init__(self):
-        self.active_connections: dict[int, list[WebSocket]] = {}
+        self.active_connections: Dict[int, List[WebSocket]] = {}
 
     async def connect(self, couple_id: int, websocket: WebSocket):
         await websocket.accept()
-        self.active_connections.setdefault(couple_id, []).append(websocket)
+
+        if couple_id not in self.active_connections:
+            self.active_connections[couple_id] = []
+
+        self.active_connections[couple_id].append(websocket)
 
     def disconnect(self, couple_id: int, websocket: WebSocket):
-        connections = self.active_connections.get(couple_id)
-        if not connections:
+        if couple_id not in self.active_connections:
             return
 
-        if websocket in connections:
-            connections.remove(websocket)
+        self.active_connections[couple_id] = [
+            ws for ws in self.active_connections[couple_id]
+            if ws != websocket
+        ]
 
-        if not connections:
-            self.active_connections.pop(couple_id, None)
+        if not self.active_connections[couple_id]:
+            del self.active_connections[couple_id]
 
     async def broadcast(self, couple_id: int, message: dict):
-        connections = self.active_connections.get(couple_id, [])
-        alive = []
+        if couple_id not in self.active_connections:
+            return
 
-        for ws in connections:
+        alive_connections = []
+
+        for ws in self.active_connections[couple_id]:
             try:
-                await ws.send_json(message)
-                alive.append(ws)
-            except Exception:
-                pass  # socket chết
+                if ws.application_state == WebSocketState.CONNECTED:
+                    await ws.send_json(message)
+                    alive_connections.append(ws)
+            except:
+                # socket đã chết → bỏ
+                pass
 
-        if alive:
-            self.active_connections[couple_id] = alive
-        else:
-            self.active_connections.pop(couple_id, None)
-
+        self.active_connections[couple_id] = alive_connections
 
 
 manager = ConnectionManager()
@@ -127,9 +138,25 @@ async def chat_ws(
 
     try:
         while True:
-            data = await websocket.receive_json()
-            content = data.get("content")
+            msg = await websocket.receive()
 
+            # Client đóng socket
+            if msg["type"] == "websocket.disconnect":
+                break
+
+            # Không phải text (ping, pong, binary, keepalive)
+            if "text" not in msg:
+                continue
+
+            text = msg["text"]
+
+            # Không phải JSON (ping, empty frame...)
+            try:
+                data = json.loads(text)
+            except json.JSONDecodeError:
+                continue
+
+            content = data.get("content")
             if not content:
                 continue
 
@@ -150,5 +177,6 @@ async def chat_ws(
                     "created_at": message.created_at.isoformat(),
                 },
             )
+
     except WebSocketDisconnect:
         manager.disconnect(couple_id, websocket)
