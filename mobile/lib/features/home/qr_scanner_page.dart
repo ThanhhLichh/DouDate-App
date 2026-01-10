@@ -40,8 +40,6 @@ class _QRScannerPageState extends State<QRScannerPage> {
   Future<void> _handleQRCode(String code) async {
     if (_isProcessing || _isDisposed) return;
 
-    final homeController = context.read<HomeController>();
-
     setState(() {
       _isProcessing = true;
       _scannedToken = code;
@@ -54,35 +52,66 @@ class _QRScannerPageState extends State<QRScannerPage> {
       debugPrint('Error stopping camera: $e');
     }
 
+    if (!mounted) return;
+
+    // Lưu reference đến controller trước khi await
+    final homeController = context.read<HomeController>();
     final success = await homeController.scanQRCode(code);
 
     if (!mounted || _isDisposed) return;
 
-    if (success && homeController.scannedQRData != null) {
-      // Show dialog
-      final result = await showDialog<bool>(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => QRConfirmDialog(
-          data: homeController.scannedQRData!,
-          qrToken: _scannedToken!,
-        ),
-      );
+    if (success) {
+      // Lưu data vào biến local
+      final qrData = homeController.scannedQRData;
 
-      if (!mounted || _isDisposed) return;
+      if (qrData != null && _scannedToken != null) {
+        // Show dialog
+        final result = await showDialog<bool>(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) =>
+              QRConfirmDialog(data: qrData, qrToken: _scannedToken!),
+        );
 
-      if (result == true) {
-        // Success - close page and return true
-        Navigator.pop(context, true);
+        if (!mounted || _isDisposed) return;
+
+        if (result == true) {
+          // Success - close page
+          if (mounted) {
+            Navigator.pop(context, true);
+          }
+        } else {
+          // User cancelled - restart camera
+          homeController.clearScannedQRData();
+          if (mounted) {
+            setState(() {
+              _isProcessing = false;
+              _scannedToken = null;
+            });
+          }
+
+          if (!_isDisposed && mounted) {
+            try {
+              await _controller.start();
+            } catch (e) {
+              debugPrint('Error restarting camera: $e');
+            }
+          }
+        }
       } else {
-        // User cancelled - restart camera
-        homeController.clearScannedQRData();
-        setState(() {
-          _isProcessing = false;
-          _scannedToken = null;
-        });
+        // Data null
+        if (mounted && !_isDisposed) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Failed to process QR data'),
+              backgroundColor: Colors.red,
+            ),
+          );
+          setState(() {
+            _isProcessing = false;
+            _scannedToken = null;
+          });
 
-        if (!_isDisposed) {
           try {
             await _controller.start();
           } catch (e) {
@@ -91,7 +120,7 @@ class _QRScannerPageState extends State<QRScannerPage> {
         }
       }
     } else {
-      // Scan failed - show error and restart camera
+      // Scan failed
       if (mounted && !_isDisposed) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

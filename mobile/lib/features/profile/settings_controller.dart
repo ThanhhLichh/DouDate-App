@@ -36,7 +36,7 @@ class SettingsController extends ChangeNotifier {
     try {
       final token = await _storageService.getToken();
       if (token == null) {
-        _errorMessage = 'Not authenticated';
+        _errorMessage = ErrorMessages.notAuthenticated;
         _isLoading = false;
         notifyListeners();
         return false;

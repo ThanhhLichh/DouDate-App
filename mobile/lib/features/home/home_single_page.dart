@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
@@ -21,34 +23,36 @@ class HomeSinglePage extends StatefulWidget {
 
 class _HomeSinglePageState extends State<HomeSinglePage> {
   bool _isLoggingOut = false;
+  late HomeController _homeController;
+  StreamSubscription? _qrSub;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _homeController = context.read<HomeController>();
+  }
 
   @override
   void initState() {
     super.initState();
-    // Generate QR code khi page load
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final homeController = context.read<HomeController>();
+      // Generate QR
+      _homeController.generateQRCode();
 
-      // Generate QR code
-      homeController.generateQRCode();
+      // Connect WebSocket
+      _homeController.connectQRWebSocket();
 
-      // Connect to WebSocket để nhận thông báo khi có người scan
-      homeController.connectQRWebSocket();
+      // Listen QR events
+      _qrSub = _homeController.qrEventStream?.listen((event) {
+        if (!mounted) return;
 
-      // Listen to WebSocket events
-      homeController.qrEventStream?.listen((event) {
-        if (event.event == 'QR_SCANNED' && mounted) {
-          // Show notification that someone scanned the QR
+        if (event.event == 'QR_SCANNED') {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text('Someone scanned your QR code! 🎉'),
+            const SnackBar(
+              content: Text('Someone scanned your QR code! 🎉'),
               backgroundColor: Colors.green,
-              duration: const Duration(seconds: 3),
-              action: SnackBarAction(
-                label: 'OK',
-                textColor: Colors.white,
-                onPressed: () {},
-              ),
+              duration: Duration(seconds: 3),
             ),
           );
         }
@@ -58,9 +62,9 @@ class _HomeSinglePageState extends State<HomeSinglePage> {
 
   @override
   void dispose() {
-    // Disconnect WebSocket and clear QR data
-    context.read<HomeController>().disconnectQRWebSocket();
-    context.read<HomeController>().clearQRData();
+    _qrSub?.cancel();
+    _homeController.disconnectQRWebSocket();
+    _homeController.clearQRData();
     super.dispose();
   }
 

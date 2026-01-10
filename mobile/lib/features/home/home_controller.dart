@@ -6,7 +6,8 @@ import 'dart:async';
 import 'models/qr_models.dart';
 import '../../core/constants/app_constants.dart';
 import 'models/qr_scan_models.dart';
-import '../../core/services/qr_webscoket_service.dart';
+// import '../../core/services/qr_websocket_service.dart';
+import '../../core/websocket/qr_websocket_service.dart';
 
 class HomeController extends ChangeNotifier {
   final StorageService _storageService = StorageService();

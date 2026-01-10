@@ -1,147 +1,70 @@
+import '../../../core/config/api_config.dart';
 import '../../../core/models/api_response.dart';
 import '../../../core/services/api_client.dart';
+import '../../../core/services/storage_service.dart';
 import '../models/chat_models.dart';
 import '../models/conversation_settings_models.dart';
 
 class ChatRepository {
   final ApiClient _apiClient = ApiClient();
+  final StorageService _storageService = StorageService();
 
-  // Get partner conversation (only one conversation for couple app)
+  // Get couple stats (conversation info)
   Future<ApiResponse<Conversation>> getPartnerConversation() async {
-    // Mock data - thay bằng API thực khi có
-    await Future.delayed(const Duration(milliseconds: 500));
+    try {
+      final token = await _storageService.getToken();
+      if (token == null) {
+        return ApiResponse.error(message: 'No authentication token found');
+      }
 
-    final mockConversation = Conversation(
-      id: '1',
-      partnerId: 'partner_1',
-      partnerName: 'My Love ❤️',
-      partnerAvatar: null,
-      lastMessage: Message(
-        id: 'm1',
-        conversationId: '1',
-        senderId: 'partner_1',
-        senderName: 'My Love',
-        content: 'I miss you so much! 💕',
-        type: MessageType.text,
-        timestamp: DateTime.now().subtract(const Duration(minutes: 5)),
-        isRead: false,
-      ),
-      unreadCount: 3,
-      isOnline: true,
-    );
-
-    return ApiResponse.success(data: mockConversation);
+      final response = await _apiClient.get<Conversation>(
+        ApiConfig.coupleStats,
+        token: token,
+        fromJsonT: (json) => Conversation.fromJson(json),
+      );
+      return response;
+    } catch (e) {
+      return ApiResponse.error(
+        message: 'Failed to load conversation: ${e.toString()}',
+      );
+    }
   }
 
-  // Get messages in a conversation
-  Future<ApiResponse<List<Message>>> getMessages(String conversationId) async {
-    // Mock data
-    await Future.delayed(const Duration(milliseconds: 500));
+  // Get messages history
+  Future<ApiResponse<List<Message>>> getMessages(int coupleId) async {
+    try {
+      final token = await _storageService.getToken();
+      if (token == null) {
+        return ApiResponse.error(message: 'No authentication token found');
+      }
 
-    final mockMessages = [
-      Message(
-        id: 'm1',
-        conversationId: conversationId,
-        senderId: 'user_1',
-        senderName: 'You',
-        content: 'Hey baby! How was your day?',
-        type: MessageType.text,
-        timestamp: DateTime.now().subtract(const Duration(hours: 2)),
-        isRead: true,
-      ),
-      Message(
-        id: 'm2',
-        conversationId: conversationId,
-        senderId: 'partner_1',
-        senderName: 'My Love',
-        content: 'It was great! I kept thinking about you 💕',
-        type: MessageType.text,
-        timestamp: DateTime.now().subtract(
-          const Duration(hours: 1, minutes: 55),
-        ),
-        isRead: true,
-      ),
-      Message(
-        id: 'm3',
-        conversationId: conversationId,
-        senderId: 'user_1',
-        senderName: 'You',
-        content: 'Aww that\'s so sweet! Can\'t wait to see you tonight',
-        type: MessageType.text,
-        timestamp: DateTime.now().subtract(
-          const Duration(hours: 1, minutes: 50),
-        ),
-        isRead: true,
-      ),
-      Message(
-        id: 'm4',
-        conversationId: conversationId,
-        senderId: 'partner_1',
-        senderName: 'My Love',
-        content: 'Me too! What should we do for dinner?',
-        type: MessageType.text,
-        timestamp: DateTime.now().subtract(
-          const Duration(hours: 1, minutes: 45),
-        ),
-        isRead: true,
-      ),
-      Message(
-        id: 'm5',
-        conversationId: conversationId,
-        senderId: 'user_1',
-        senderName: 'You',
-        content: 'How about that new Italian restaurant? 🍝',
-        type: MessageType.text,
-        timestamp: DateTime.now().subtract(const Duration(minutes: 30)),
-        isRead: true,
-      ),
-      Message(
-        id: 'm6',
-        conversationId: conversationId,
-        senderId: 'partner_1',
-        senderName: 'My Love',
-        content: 'Perfect! I love you so much! ❤️',
-        type: MessageType.text,
-        timestamp: DateTime.now().subtract(const Duration(minutes: 5)),
-        isRead: false,
-      ),
-    ];
-
-    return ApiResponse.success(data: mockMessages);
+      final response = await _apiClient.get<List<Message>>(
+        '${ApiConfig.getMessages}/$coupleId',
+        token: token,
+        fromJsonT: (json) {
+          if (json is List) {
+            return json.map((item) => Message.fromJson(item)).toList();
+          }
+          return [];
+        },
+      );
+      return response;
+    } catch (e) {
+      return ApiResponse.error(
+        message: 'Failed to load messages: ${e.toString()}',
+      );
+    }
   }
 
-  // Send message
-  Future<ApiResponse<Message>> sendMessage({
-    required String conversationId,
-    required String content,
-    required MessageType type,
-  }) async {
-    // Mock sending
-    await Future.delayed(const Duration(milliseconds: 300));
-
-    final newMessage = Message(
-      id: 'm_${DateTime.now().millisecondsSinceEpoch}',
-      conversationId: conversationId,
-      senderId: 'user_1', // Current user ID
-      senderName: 'You',
-      content: content,
-      type: type,
-      timestamp: DateTime.now(),
-      isRead: false,
-    );
-
-    return ApiResponse.success(data: newMessage);
-  }
-
-  // Mark messages as read
-  Future<ApiResponse<bool>> markAsRead(String conversationId) async {
-    await Future.delayed(const Duration(milliseconds: 200));
+  // Mark messages as read (giữ lại để tương lai)
+  Future<ApiResponse<bool>> markAsRead(int coupleId) async {
+    // Chưa có API, trả về success
+    await Future.delayed(const Duration(milliseconds: 100));
     return ApiResponse.success(data: true);
   }
 
   // ==================== CONVERSATION SETTINGS ====================
 
-  // Get conversation settings
   Future<ApiResponse<ConversationSettings>> getConversationSettings(
     String conversationId,
   ) async {
@@ -158,7 +81,6 @@ class ChatRepository {
     return ApiResponse.success(data: mockSettings);
   }
 
-  // Update conversation settings
   Future<ApiResponse<ConversationSettings>> updateConversationSettings(
     String conversationId,
     ConversationSettings settings,
@@ -167,13 +89,11 @@ class ChatRepository {
     return ApiResponse.success(data: settings);
   }
 
-  // Get media items (images/videos)
   Future<ApiResponse<List<MediaItem>>> getMediaItems(
     String conversationId,
   ) async {
     await Future.delayed(const Duration(milliseconds: 500));
 
-    // Mock media items
     final mockMedia = <MediaItem>[
       MediaItem(
         id: 'media_1',
@@ -198,11 +118,7 @@ class ChatRepository {
     return ApiResponse.success(data: mockMedia);
   }
 
-  // React to message
-  Future<ApiResponse<bool>> reactToMessage(
-    String messageId,
-    String emoji,
-  ) async {
+  Future<ApiResponse<bool>> reactToMessage(int messageId, String emoji) async {
     await Future.delayed(const Duration(milliseconds: 200));
     return ApiResponse.success(data: true);
   }

@@ -36,7 +36,7 @@ class MessageBubble extends StatelessWidget {
               radius: context.space(14),
               backgroundColor: Colors.grey[300],
               child: Text(
-                message.senderName[0].toUpperCase(),
+                message.senderName![0].toUpperCase(),
                 style: TextStyle(
                   fontSize: context.sp(AppDimensions.fontXS),
                   fontWeight: FontWeight.bold,

@@ -2,6 +2,7 @@ import '../../../core/config/api_config.dart';
 import '../../../core/models/api_response.dart';
 import '../../../core/services/api_client.dart';
 import '../models/auth_models.dart';
+import '../../../core/services/storage_service.dart';
 
 class AuthRepository {
   final ApiClient _apiClient = ApiClient();
@@ -14,6 +15,28 @@ class AuthRepository {
         data: request.toJson(),
         fromJsonT: (json) => AuthResponse.fromJson(json),
       );
+      if (response.success && response.data != null) {
+        final storageService = StorageService();
+
+        await storageService.saveTokenWithExpiry(response.data!.accessToken);
+        await storageService.saveTokenWithExpiry(
+          response.data!.refreshToken,
+          isRefreshToken: true,
+        );
+
+        final userResponse = await _apiClient.get<User>(
+          ApiConfig.getUser,
+          token: response.data!.accessToken,
+          fromJsonT: (json) => User.fromJson(json),
+        );
+
+        // Lưu userId vào storage
+        if (userResponse.success && userResponse.data != null) {
+          await storageService.saveUserId(userResponse.data!.id);
+          print("Đã lưu UserId thành công: ${userResponse.data!.id}"); // Debug
+        }
+      }
+
       return response;
     } catch (e) {
       return ApiResponse.error(message: 'Login failed: ${e.toString()}');

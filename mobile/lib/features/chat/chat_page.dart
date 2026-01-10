@@ -17,7 +17,6 @@ class ChatPage extends StatefulWidget {
 
 class _ChatPageState extends State<ChatPage> {
   final ScrollController _scrollController = ScrollController();
-  final String _currentUserId = 'user_1';
 
   @override
   void initState() {
@@ -27,11 +26,20 @@ class _ChatPageState extends State<ChatPage> {
       if (controller.conversation == null) {
         controller.initializeConversation().then((_) {
           if (controller.conversation != null) {
-            controller.fetchMessages();
+            controller.fetchMessages().then((_) {
+              // Scroll sau khi load xong messages
+              if (controller.messages.isNotEmpty) {
+                _scrollToBottom();
+              }
+            });
           }
         });
       } else {
-        controller.fetchMessages();
+        controller.fetchMessages().then((_) {
+          if (controller.messages.isNotEmpty) {
+            _scrollToBottom();
+          }
+        });
       }
     });
   }
@@ -43,15 +51,17 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   void _scrollToBottom() {
-    if (_scrollController.hasClients) {
-      Future.delayed(const Duration(milliseconds: 300), () {
-        _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
-        );
-      });
-    }
+    if (!mounted || !_scrollController.hasClients) return;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_scrollController.hasClients) return;
+
+      _scrollController.animateTo(
+        _scrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
+    });
   }
 
   Future<void> _handleSendMessage(String content) async {
@@ -247,11 +257,11 @@ class _ChatPageState extends State<ChatPage> {
     }
 
     // Scroll to bottom when messages load
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (controller.messages.isNotEmpty) {
-        _scrollToBottom();
-      }
-    });
+    // WidgetsBinding.instance.addPostFrameCallback((_) {
+    //   if (controller.messages.isNotEmpty) {
+    //     _scrollToBottom();
+    //   }
+    // });
 
     return RefreshIndicator(
       onRefresh: _handleRefresh,
@@ -264,7 +274,13 @@ class _ChatPageState extends State<ChatPage> {
         itemCount: controller.messages.length,
         itemBuilder: (context, index) {
           final message = controller.messages[index];
-          final isMe = message.senderId == _currentUserId;
+
+          // Lấy currentUserId từ controller
+          final myId = controller.currentUserId;
+
+          // So sánh bằng cách ép kiểu về String để tránh mọi sai lệch runtime type
+          final isMe =
+              myId != null && message.senderId.toString() == myId.toString();
 
           final showDateSeparator =
               index == 0 ||

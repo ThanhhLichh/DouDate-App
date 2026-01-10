@@ -1,5 +1,5 @@
 class UserProfile {
-  final String id;
+  final int id;
   final String name;
   final String? birthday;
   final String? gender;
@@ -19,30 +19,18 @@ class UserProfile {
 
   factory UserProfile.fromJson(Map<String, dynamic> json) {
     return UserProfile(
-      id: json['id'] ?? json['_id'] ?? '',
+      id: json['id'] is int ? json['id'] : int.parse(json['id'].toString()),
       name: json['full_name'] ?? json['name'] ?? '',
       birthday: json['birth_date'] ?? json['birthday'],
       gender: json['gender'],
       avatarUrl: json['avatar_url'] ?? json['avatarUrl'],
-      // isConnected:
-      //     json['partner_name'] != null &&
-      //     (json['partner_name'] as String).isNotEmpty,
       partnerName: json['partner_name'] ?? json['partnerName'],
       email: json['email'],
     );
   }
 
-  Map<String, dynamic> toJson() {
-    return {
-      'full_name': name,
-      'birth_date': birthday,
-      'gender': gender,
-      'avatar_url': avatarUrl,
-    };
-  }
-
   UserProfile copyWith({
-    String? id,
+    int? id,
     String? name,
     String? birthday,
     String? gender,

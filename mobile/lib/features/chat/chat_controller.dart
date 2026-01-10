@@ -3,12 +3,14 @@ import '../../core/services/storage_service.dart';
 import 'models/chat_models.dart';
 import 'models/conversation_settings_models.dart';
 import 'repository/chat_repository.dart';
+// import '../../core/services/websocket_service.dart';
+import '../../core/websocket/chat_websocket_service.dart';
 
 class ChatController extends ChangeNotifier {
   final ChatRepository _repository = ChatRepository();
   final StorageService _storageService = StorageService();
+  final ChatWebSocketService _chatSocketService = ChatWebSocketService();
 
-  // State
   List<Message> _messages = [];
   Conversation? _conversation;
   ConversationSettings? _settings;
@@ -16,8 +18,8 @@ class ChatController extends ChangeNotifier {
   bool _isLoading = false;
   bool _isSending = false;
   String? _errorMessage;
+  int? _currentUserId;
 
-  // Getters
   List<Message> get messages => _messages;
   Conversation? get conversation => _conversation;
   ConversationSettings? get settings => _settings;
@@ -25,22 +27,70 @@ class ChatController extends ChangeNotifier {
   bool get isLoading => _isLoading;
   bool get isSending => _isSending;
   String? get errorMessage => _errorMessage;
+  bool get isConnected => _chatSocketService.isConnected;
+  int? get currentUserId => _currentUserId;
 
-  // Initialize conversation
+  ChatController() {
+    _loadCurrentUserId();
+    _listenToWebSocket();
+  }
+
+  Future<void> _loadCurrentUserId() async {
+    final id = await _storageService.getUserId();
+    if (id != null) {
+      _currentUserId = id;
+      notifyListeners();
+    }
+  }
+
+  void _listenToWebSocket() {
+    _chatSocketService.messageStream.listen((message) {
+      // Thêm sender info từ conversation
+      Message enrichedMessage = message;
+
+      if (_conversation != null && _currentUserId != null) {
+        final isMe = message.senderId == _currentUserId;
+        enrichedMessage = message.copyWith(
+          senderName: isMe
+              ? _conversation!.yourName
+              : _conversation!.partnerName,
+          senderAvatar: isMe
+              ? _conversation!.yourAvatar
+              : _conversation!.partnerAvatar,
+        );
+      }
+
+      // Kiểm tra message đã tồn tại chưa
+      final existingIndex = _messages.indexWhere((m) => m.id == message.id);
+      if (existingIndex == -1) {
+        _messages.add(enrichedMessage);
+        _conversation = _conversation?.copyWith(lastMessage: enrichedMessage);
+        notifyListeners();
+      }
+    });
+  }
+
   Future<void> initializeConversation() async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
 
     try {
+      // Load current user ID
+      await _loadCurrentUserId();
+
+      // Get conversation info
       final response = await _repository.getPartnerConversation();
 
       if (response.success && response.data != null) {
         _conversation = response.data;
         _errorMessage = null;
 
-        // Load settings from local storage
+        // Load settings
         await _loadSettingsFromStorage();
+
+        // Connect WebSocket
+        await _connectWebSocket();
       } else {
         _errorMessage = response.message ?? 'Failed to load conversation';
       }
@@ -52,7 +102,22 @@ class ChatController extends ChangeNotifier {
     }
   }
 
-  // Load settings from local storage
+  Future<void> _connectWebSocket() async {
+    if (_conversation == null) return;
+
+    try {
+      final token = await _storageService.getToken();
+      if (token != null) {
+        await _chatSocketService.connect({
+          'coupleId': _conversation!.coupleId,
+          'token': token,
+        });
+      }
+    } catch (e) {
+      print('Failed to connect WebSocket: $e');
+    }
+  }
+
   Future<void> _loadSettingsFromStorage() async {
     try {
       final settingsJson = await _storageService.getConversationSettings();
@@ -60,21 +125,18 @@ class ChatController extends ChangeNotifier {
       if (settingsJson != null) {
         _settings = ConversationSettings.fromJson(settingsJson);
       } else if (_conversation != null) {
-        // Create default settings
         _settings = ConversationSettings(conversationId: _conversation!.id);
         await _saveSettingsToStorage();
       }
 
       notifyListeners();
     } catch (e) {
-      // Use default settings if loading fails
       if (_conversation != null) {
         _settings = ConversationSettings(conversationId: _conversation!.id);
       }
     }
   }
 
-  // Save settings to local storage
   Future<void> _saveSettingsToStorage() async {
     if (_settings != null) {
       try {
@@ -85,7 +147,6 @@ class ChatController extends ChangeNotifier {
     }
   }
 
-  // Fetch messages
   Future<void> fetchMessages() async {
     if (_conversation == null) {
       await initializeConversation();
@@ -97,16 +158,31 @@ class ChatController extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final response = await _repository.getMessages(_conversation!.id);
+      final response = await _repository.getMessages(_conversation!.coupleId);
 
       if (response.success && response.data != null) {
-        _messages = response.data!;
+        // Enrich messages with sender info
+        _messages = response.data!.map((msg) {
+          final isMe = msg.senderId == _currentUserId;
+          return msg.copyWith(
+            senderName: isMe
+                ? _conversation!.yourName
+                : _conversation!.partnerName,
+            senderAvatar: isMe
+                ? _conversation!.yourAvatar
+                : _conversation!.partnerAvatar,
+          );
+        }).toList();
+
         _errorMessage = null;
 
-        await _repository.markAsRead(_conversation!.id);
+        await _repository.markAsRead(_conversation!.coupleId);
 
-        if (_conversation != null) {
-          _conversation = _conversation!.copyWith(unreadCount: 0);
+        if (_messages.isNotEmpty) {
+          _conversation = _conversation!.copyWith(
+            lastMessage: _messages.last,
+            unreadCount: 0,
+          );
         }
       } else {
         _errorMessage = response.message ?? 'Failed to load messages';
@@ -119,33 +195,21 @@ class ChatController extends ChangeNotifier {
     }
   }
 
-  // Send message
   Future<bool> sendMessage(String content) async {
-    if (content.trim().isEmpty || _conversation == null) return false;
+    if (content.trim().isEmpty ||
+        _conversation == null ||
+        !_chatSocketService.isConnected) {
+      return false;
+    }
 
     _isSending = true;
     notifyListeners();
 
     try {
-      final response = await _repository.sendMessage(
-        conversationId: _conversation!.id,
-        content: content.trim(),
-        type: MessageType.text,
-      );
-
-      if (response.success && response.data != null) {
-        _messages.add(response.data!);
-        _conversation = _conversation!.copyWith(lastMessage: response.data!);
-
-        _isSending = false;
-        notifyListeners();
-        return true;
-      } else {
-        _errorMessage = response.message ?? 'Failed to send message';
-        _isSending = false;
-        notifyListeners();
-        return false;
-      }
+      _chatSocketService.sendMessage(content.trim());
+      _isSending = false;
+      notifyListeners();
+      return true;
     } catch (e) {
       _errorMessage = 'Failed to send message';
       _isSending = false;
@@ -165,31 +229,20 @@ class ChatController extends ChangeNotifier {
     notifyListeners();
   }
 
-  // ==================== CONVERSATION SETTINGS ====================
-
-  // Load conversation settings
+  // Conversation settings methods giữ nguyên...
   Future<void> loadSettings() async {
     if (_conversation == null) return;
-
-    // Load from local storage first
     await _loadSettingsFromStorage();
-
-    // DON'T sync with backend on every load
-    // Backend sync only happens when user explicitly updates settings
-    // This prevents overwriting local changes with stale backend data
   }
 
-  // Update bubble color
   Future<bool> updateBubbleColor(String hexColor) async {
     if (_conversation == null || _settings == null) return false;
 
     try {
-      // Update local state immediately
       _settings = _settings!.copyWith(bubbleColor: hexColor);
       await _saveSettingsToStorage();
       notifyListeners();
 
-      // Sync with backend
       final response = await _repository.updateConversationSettings(
         _conversation!.id,
         _settings!,
@@ -207,7 +260,6 @@ class ChatController extends ChangeNotifier {
     }
   }
 
-  // Update quick emoji
   Future<bool> updateQuickEmoji(String emoji) async {
     if (_conversation == null || _settings == null) return false;
 
@@ -233,7 +285,6 @@ class ChatController extends ChangeNotifier {
     }
   }
 
-  // Update nicknames
   Future<bool> updateNicknames({
     String? yourNickname,
     String? partnerNickname,
@@ -241,7 +292,6 @@ class ChatController extends ChangeNotifier {
     if (_conversation == null || _settings == null) return false;
 
     try {
-      // Update settings
       _settings = _settings!.copyWith(
         yourNickname: yourNickname ?? _settings!.yourNickname,
         partnerNickname: partnerNickname ?? _settings!.partnerNickname,
@@ -250,7 +300,6 @@ class ChatController extends ChangeNotifier {
       await _saveSettingsToStorage();
       notifyListeners();
 
-      // Sync with backend
       final response = await _repository.updateConversationSettings(
         _conversation!.id,
         _settings!,
@@ -268,12 +317,10 @@ class ChatController extends ChangeNotifier {
     }
   }
 
-  // Update background theme
   Future<bool> updateBackgroundTheme(BackgroundTheme theme) async {
     if (_conversation == null || _settings == null) return false;
 
     try {
-      // Update theme and auto-adjust bubble color
       _settings = _settings!.copyWith(
         backgroundTheme: theme,
         bubbleColor: theme.recommendedBubbleColor,
@@ -299,7 +346,6 @@ class ChatController extends ChangeNotifier {
     }
   }
 
-  // Load media items
   Future<void> loadMediaItems() async {
     if (_conversation == null) return;
 
@@ -315,8 +361,7 @@ class ChatController extends ChangeNotifier {
     }
   }
 
-  // React to message
-  Future<bool> reactToMessage(String messageId, String emoji) async {
+  Future<bool> reactToMessage(int messageId, String emoji) async {
     try {
       final response = await _repository.reactToMessage(messageId, emoji);
 
@@ -341,5 +386,11 @@ class ChatController extends ChangeNotifier {
     } catch (e) {
       return false;
     }
+  }
+
+  @override
+  void dispose() {
+    _chatSocketService.dispose();
+    super.dispose();
   }
 }

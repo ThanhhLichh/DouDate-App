@@ -14,7 +14,6 @@ class ApiConfig {
   static const String register = '/auth/register';
   static const String logout = '/auth/logout';
   static const String refreshToken = '/auth/refresh';
-  static const String profile = '/users/profile';
 
   // User Endpoints
   static const String getUser = '/users/me';
@@ -32,6 +31,10 @@ class ApiConfig {
 
   // WebSocket Endpoints
   static const String qrStatusWebSocket = '/ws/qr-status';
+
+  // Chat/Message Endpoints
+  static const String getMessages = '/messages';
+  static const String chatWebSocket = '/ws/chat';
 
   // Timeouts
   static const int connectTimeout = 30000; // 30 seconds
