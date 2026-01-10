@@ -76,8 +76,11 @@ class _QRScannerPageState extends State<QRScannerPage> {
         if (!mounted || _isDisposed) return;
 
         if (result == true) {
+          // Delay trước khi pop để đảm bảo state updates hoàn tất
+          await Future.delayed(const Duration(milliseconds: 100));
+
           // Success - close page
-          if (mounted) {
+          if (mounted && !_isDisposed) {
             Navigator.pop(context, true);
           }
         } else {

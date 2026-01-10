@@ -18,7 +18,7 @@ class StatsGrid extends StatelessWidget {
         Expanded(
           child: StatItemCard(
             title: "Chat",
-            value: "${data.messageCount / 1000}k",
+            value: "${data.messageCount}",
             icon: Icons.chat_bubble_outline,
             theme: theme,
           ),

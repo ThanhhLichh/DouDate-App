@@ -272,18 +272,38 @@ class HomeController extends ChangeNotifier {
       if (response.success) {
         _isResponding = false;
         _scannedQRData = null; // Clear scanned data
-        notifyListeners();
+
+        // Sử dụng scheduleMicrotask để delay notifyListeners
+        // Điều này đảm bảo notification không xảy ra khi widget tree đang locked
+        await Future.microtask(() {});
+
+        if (hasListeners) {
+          notifyListeners();
+        }
+
         return response.data;
       } else {
         _errorMessage = response.message ?? 'Failed to respond';
         _isResponding = false;
-        notifyListeners();
+
+        await Future.microtask(() {});
+
+        if (hasListeners) {
+          notifyListeners();
+        }
+
         return null;
       }
     } catch (e) {
       _errorMessage = 'An error occurred: ${e.toString()}';
       _isResponding = false;
-      notifyListeners();
+
+      await Future.microtask(() {});
+
+      if (hasListeners) {
+        notifyListeners();
+      }
+
       return null;
     }
   }
