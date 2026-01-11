@@ -9,6 +9,7 @@ from routers.moments import router as moments_router
 from routers.memories import router as memories_router
 from routers.users import router as users_router
 from routers.qr_socket import router as qr_socket_router
+from routers import message_reactions
 from fastapi.middleware.cors import CORSMiddleware
 
 
@@ -26,6 +27,7 @@ app.include_router(moments_router)
 app.include_router(memories_router)
 app.include_router(users_router)
 app.include_router(qr_socket_router)
+app.include_router(message_reactions.router)
 
 @app.get("/health")
 def health_check():
