@@ -30,3 +30,21 @@ class CoupleStatsResponse(BaseModel):
     moment_count: int
     memory_count: int
 
+
+class ChatSettingsResponse(BaseModel):
+    couple_id: int
+    bubble_color: str
+    quick_emoji: str
+    background_theme: str
+    your_nickname: str
+    partner_nickname: str
+
+
+class ChatSettingsUpdate(BaseModel):
+    bubble_color: Optional[str] = None
+    quick_emoji: Optional[str] = None
+    background_theme: Optional[str] = None
+    your_nickname: str
+    partner_nickname: str
+
+

@@ -32,6 +32,10 @@ class Couple(Base):
     nickname_1 = Column(String(120), nullable=True)
     nickname_2 = Column(String(120), nullable=True)
 
+    bubble_color = Column(String(16), default="#0084FF")
+    quick_emoji = Column(String(8), default="👍")
+    background_theme = Column(String(32), default="default")
+
     start_date = Column(Date, nullable=False)
     end_date = Column(Date, nullable=True)
 
