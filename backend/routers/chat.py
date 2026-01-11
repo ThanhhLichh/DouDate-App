@@ -25,43 +25,77 @@ router = APIRouter()
 class ConnectionManager:
     def __init__(self):
         self.active_connections: Dict[int, List[WebSocket]] = {}
+        self.online_users: Dict[int, set[int]] = {}  # couple_id -> set(user_id)
 
-    async def connect(self, couple_id: int, websocket: WebSocket):
+    async def connect(self, couple_id: int, user_id: int, websocket: WebSocket):
         await websocket.accept()
 
-        if couple_id not in self.active_connections:
-            self.active_connections[couple_id] = []
+        self.active_connections.setdefault(couple_id, []).append(websocket)
+        self.online_users.setdefault(couple_id, set())
 
-        self.active_connections[couple_id].append(websocket)
+        # 🔔 gửi trạng thái online hiện tại cho user mới
+        for uid in self.online_users[couple_id]:
+            await websocket.send_json({
+                "type": "user_presence",
+                "user_id": uid,
+                "status": "online",
+            })
 
-    def disconnect(self, couple_id: int, websocket: WebSocket):
-        if couple_id not in self.active_connections:
-            return
+        # thêm user hiện tại vào online list
+        self.online_users[couple_id].add(user_id)
 
-        self.active_connections[couple_id] = [
-            ws for ws in self.active_connections[couple_id]
-            if ws != websocket
-        ]
+        # 🔔 báo user này online cho người khác
+        await self.broadcast(
+            couple_id,
+            {
+                "type": "user_presence",
+                "user_id": user_id,
+                "status": "online",
+            }
+        )
 
-        if not self.active_connections[couple_id]:
-            del self.active_connections[couple_id]
+    def disconnect(self, couple_id: int, user_id: int, websocket: WebSocket):
+        if couple_id in self.active_connections:
+            self.active_connections[couple_id] = [
+                ws for ws in self.active_connections[couple_id]
+                if ws != websocket
+            ]
+
+            if not self.active_connections[couple_id]:
+                del self.active_connections[couple_id]
+
+        # remove khỏi online list
+        if couple_id in self.online_users:
+            self.online_users[couple_id].discard(user_id)
+
+        # 🔔 báo offline
+        import asyncio
+        asyncio.create_task(
+            self.broadcast(
+                couple_id,
+                {
+                    "type": "user_presence",
+                    "user_id": user_id,
+                    "status": "offline",
+                }
+            )
+        )
 
     async def broadcast(self, couple_id: int, message: dict):
         if couple_id not in self.active_connections:
             return
 
-        alive_connections = []
-
+        alive = []
         for ws in self.active_connections[couple_id]:
             try:
                 if ws.application_state == WebSocketState.CONNECTED:
                     await ws.send_json(message)
-                    alive_connections.append(ws)
+                    alive.append(ws)
             except:
-                # socket đã chết → bỏ
                 pass
 
-        self.active_connections[couple_id] = alive_connections
+        self.active_connections[couple_id] = alive
+
 
 
 manager = ConnectionManager()
@@ -134,7 +168,7 @@ async def chat_ws(
         await websocket.close(code=1008)
         return
 
-    await manager.connect(couple_id, websocket)
+    await manager.connect(couple_id, user_id, websocket)
 
     try:
         while True:
@@ -179,4 +213,6 @@ async def chat_ws(
             )
 
     except WebSocketDisconnect:
-        manager.disconnect(couple_id, websocket)
+        pass
+    finally:
+        manager.disconnect(couple_id, user_id, websocket)
