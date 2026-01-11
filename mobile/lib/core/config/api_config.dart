@@ -35,6 +35,10 @@ class ApiConfig {
   // Chat/Message Endpoints
   static const String getMessages = '/messages';
   static const String chatWebSocket = '/ws/chat';
+  static String getChatSettings(int coupleId) =>
+      '/couple/$coupleId/chat-settings';
+  static String updateChatSettings(int coupleId) =>
+      '/couple/$coupleId/chat-settings';
 
   // Timeouts
   static const int connectTimeout = 30000; // 30 seconds

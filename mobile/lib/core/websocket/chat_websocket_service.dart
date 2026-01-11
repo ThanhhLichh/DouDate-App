@@ -4,10 +4,25 @@ import '../../../core/config/api_config.dart';
 import '../../features/chat/models/chat_models.dart';
 import 'base_websocket_manager.dart';
 
+class PresenceEvent {
+  final int userId;
+  final String status; // "online" hoặc "offline"
+
+  PresenceEvent({required this.userId, required this.status});
+
+  factory PresenceEvent.fromJson(Map<String, dynamic> json) {
+    return PresenceEvent(userId: json['user_id'], status: json['status']);
+  }
+}
+
 class ChatWebSocketService extends BaseWebSocketManager {
   final _messageController = StreamController<Message>.broadcast();
+  final _presenceController = StreamController<PresenceEvent>.broadcast();
+  final _settingsUpdateController = StreamController<void>.broadcast();
 
   Stream<Message> get messageStream => _messageController.stream;
+  Stream<PresenceEvent> get presenceStream => _presenceController.stream;
+  Stream<void> get settingsUpdateStream => _settingsUpdateController.stream;
 
   @override
   String getWebSocketUrl(dynamic params) {
@@ -24,10 +39,29 @@ class ChatWebSocketService extends BaseWebSocketManager {
   void onMessage(dynamic data) {
     try {
       final json = jsonDecode(data);
-      final message = Message.fromJson(json);
-      _messageController.add(message);
+      final type = json['type'] as String?;
+
+      if (type == 'user_presence') {
+        // Xử lý presence event
+        final presenceEvent = PresenceEvent.fromJson(json);
+        _presenceController.add(presenceEvent);
+        print(
+          'Presence event: User ${presenceEvent.userId} is ${presenceEvent.status}',
+        );
+      } else if (type == 'chat_settings_updated') {
+        // Xử lý settings update event
+        _settingsUpdateController.add(null);
+        print('Chat settings updated by partner');
+      } else if (type == 'ping') {
+        // Ignore ping messages
+        return;
+      } else {
+        // Xử lý chat message (không có type hoặc type khác)
+        final message = Message.fromJson(json);
+        _messageController.add(message);
+      }
     } catch (e) {
-      print('Error parsing chat message: $e');
+      print('Error parsing WebSocket message: $e');
     }
   }
 
@@ -45,6 +79,8 @@ class ChatWebSocketService extends BaseWebSocketManager {
   @override
   void dispose() {
     _messageController.close();
+    _presenceController.close();
+    _settingsUpdateController.close();
     super.dispose();
   }
 }

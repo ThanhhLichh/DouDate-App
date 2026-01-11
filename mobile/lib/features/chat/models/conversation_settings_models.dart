@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 // Conversation Settings Model
 class ConversationSettings {
-  final String conversationId;
+  final int conversationId;
   final String bubbleColor;
   final String quickEmoji;
   final String? yourNickname;
@@ -20,7 +20,7 @@ class ConversationSettings {
 
   factory ConversationSettings.fromJson(Map<String, dynamic> json) {
     return ConversationSettings(
-      conversationId: json['conversation_id'] ?? '',
+      conversationId: json['couple_id'] ?? 0,
       bubbleColor: json['bubble_color'] ?? '#0084FF',
       quickEmoji: json['quick_emoji'] ?? '👍',
       yourNickname: json['your_nickname'],
@@ -33,7 +33,7 @@ class ConversationSettings {
   }
 
   Map<String, dynamic> toJson() => {
-    'conversation_id': conversationId,
+    'couple_id': conversationId,
     'bubble_color': bubbleColor,
     'quick_emoji': quickEmoji,
     'your_nickname': yourNickname,
@@ -42,7 +42,7 @@ class ConversationSettings {
   };
 
   ConversationSettings copyWith({
-    String? conversationId,
+    int? conversationId,
     String? bubbleColor,
     String? quickEmoji,
     String? yourNickname,

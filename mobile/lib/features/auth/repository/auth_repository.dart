@@ -51,6 +51,29 @@ class AuthRepository {
         token: token,
         fromJsonT: (json) => CoupleCheckResponse.fromJson(json),
       );
+
+      if (response.success &&
+          response.data != null &&
+          response.data!.hasCouple) {
+        final storage = StorageService();
+        final userId = await storage.getUserId();
+
+        if (userId != null) {
+          final couple = response.data!.couple!;
+
+          if (couple.user1Id != userId && couple.user2Id != userId) {
+            throw Exception("User not in this couple");
+          }
+
+          final partnerId = couple.user1Id == userId
+              ? couple.user2Id
+              : couple.user1Id;
+
+          await storage.savePartnerId(partnerId);
+          print("PartnerId saved: $partnerId");
+        }
+      }
+
       return response;
     } catch (e) {
       return ApiResponse.error(

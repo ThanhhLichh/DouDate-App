@@ -3,8 +3,8 @@ import '../../core/services/storage_service.dart';
 import 'models/chat_models.dart';
 import 'models/conversation_settings_models.dart';
 import 'repository/chat_repository.dart';
-// import '../../core/services/websocket_service.dart';
 import '../../core/websocket/chat_websocket_service.dart';
+import 'dart:async';
 
 class ChatController extends ChangeNotifier {
   final ChatRepository _repository = ChatRepository();
@@ -19,6 +19,7 @@ class ChatController extends ChangeNotifier {
   bool _isSending = false;
   String? _errorMessage;
   int? _currentUserId;
+  int? _partnerId;
 
   List<Message> get messages => _messages;
   Conversation? get conversation => _conversation;
@@ -29,16 +30,31 @@ class ChatController extends ChangeNotifier {
   String? get errorMessage => _errorMessage;
   bool get isConnected => _chatSocketService.isConnected;
   int? get currentUserId => _currentUserId;
+  int? get partnerId => _partnerId;
+
+  StreamSubscription? _presenceSubscription;
+  StreamSubscription? _settingsUpdateSubscription;
 
   ChatController() {
     _loadCurrentUserId();
+    _loadPartnerId();
     _listenToWebSocket();
+    _listenToPresence();
+    _listenToSettingsUpdate();
   }
 
   Future<void> _loadCurrentUserId() async {
     final id = await _storageService.getUserId();
     if (id != null) {
       _currentUserId = id;
+      notifyListeners();
+    }
+  }
+
+  Future<void> _loadPartnerId() async {
+    final id = await _storageService.getPartnerId();
+    if (id != null) {
+      _partnerId = id;
       notifyListeners();
     }
   }
@@ -60,6 +76,11 @@ class ChatController extends ChangeNotifier {
         );
       }
 
+      if (message.id <= 0 || message.content.trim().isEmpty) {
+        print('Invalid message received, skipping');
+        return;
+      }
+
       // Kiểm tra message đã tồn tại chưa
       final existingIndex = _messages.indexWhere((m) => m.id == message.id);
       if (existingIndex == -1) {
@@ -68,6 +89,57 @@ class ChatController extends ChangeNotifier {
         notifyListeners();
       }
     });
+  }
+
+  // Listen presence events
+  void _listenToPresence() {
+    _presenceSubscription = _chatSocketService.presenceStream.listen((event) {
+      if (_conversation == null || _currentUserId == null) return;
+
+      // Lấy partner ID
+      final partnerId = _partnerId;
+
+      // Chỉ cập nhật nếu event là của partner
+      if (event.userId == partnerId) {
+        final isOnline = event.status == 'online';
+
+        _conversation = _conversation!.copyWith(
+          isOnline: isOnline,
+          lastSeen: isOnline ? null : DateTime.now(),
+        );
+
+        notifyListeners();
+        print('Partner ${isOnline ? "is now online" : "went offline"}');
+      }
+    });
+  }
+
+  // Listen settings update events
+  void _listenToSettingsUpdate() {
+    _settingsUpdateSubscription = _chatSocketService.settingsUpdateStream
+        .listen((_) async {
+          if (_conversation == null) return;
+
+          print('Reloading settings from server...');
+
+          // Reload settings from server
+          final response = await _repository.getConversationSettings(
+            _conversation!.coupleId,
+          );
+
+          if (response.success && response.data != null) {
+            _settings = response.data;
+            await _saveSettingsToStorage();
+            notifyListeners();
+            print('Settings reloaded successfully');
+          }
+        });
+  }
+
+  Future<void> _requestPresenceState() async {
+    if (_conversation == null) return;
+
+    print('Waiting for presence state from server...');
   }
 
   Future<void> initializeConversation() async {
@@ -112,6 +184,8 @@ class ChatController extends ChangeNotifier {
           'coupleId': _conversation!.coupleId,
           'token': token,
         });
+
+        await _requestPresenceState();
       }
     } catch (e) {
       print('Failed to connect WebSocket: $e');
@@ -124,15 +198,34 @@ class ChatController extends ChangeNotifier {
 
       if (settingsJson != null) {
         _settings = ConversationSettings.fromJson(settingsJson);
-      } else if (_conversation != null) {
-        _settings = ConversationSettings(conversationId: _conversation!.id);
-        await _saveSettingsToStorage();
+        notifyListeners();
       }
 
-      notifyListeners();
-    } catch (e) {
+      // Then fetch from server if we have conversation
       if (_conversation != null) {
-        _settings = ConversationSettings(conversationId: _conversation!.id);
+        final response = await _repository.getConversationSettings(
+          _conversation!.coupleId,
+        );
+
+        if (response.success && response.data != null) {
+          _settings = response.data;
+          await _saveSettingsToStorage();
+          notifyListeners();
+        } else if (settingsJson == null) {
+          // No local cache and server failed, create default
+          _settings = ConversationSettings(
+            conversationId: _conversation!.coupleId,
+          );
+          await _saveSettingsToStorage();
+          notifyListeners();
+        }
+      }
+    } catch (e) {
+      // Fallback to default if everything fails
+      if (_conversation != null && _settings == null) {
+        _settings = ConversationSettings(
+          conversationId: _conversation!.coupleId,
+        );
       }
     }
   }
@@ -390,6 +483,8 @@ class ChatController extends ChangeNotifier {
 
   @override
   void dispose() {
+    _presenceSubscription?.cancel();
+    _settingsUpdateSubscription?.cancel();
     _chatSocketService.dispose();
     super.dispose();
   }

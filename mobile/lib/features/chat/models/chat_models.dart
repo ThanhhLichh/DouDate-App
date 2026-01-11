@@ -123,7 +123,7 @@ class Conversation {
   }
 
   // Backward compatible getters
-  String get id => coupleId.toString();
+  int get id => coupleId;
   String get partnerId => ''; // Not needed for couple app
 
   Conversation copyWith({

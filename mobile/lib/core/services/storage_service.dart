@@ -9,6 +9,7 @@ class StorageService {
   static const _refreshTokenKey = 'refresh_token';
   static const _userKey = 'user_data';
   static const _userIdKey = 'user_id';
+  static const _partnerIdKey = 'partner_id';
   static const _conversationSettingsKey = 'conversation_settings';
   static const _accessTokenExpiryKey = 'access_token_expiry';
   static const _refreshTokenExpiryKey = 'refresh_token_expiry';
@@ -100,6 +101,23 @@ class StorageService {
 
   Future<void> deleteUserId() async {
     await _storage.delete(key: _userIdKey);
+  }
+
+  // Partner ID
+  Future<void> savePartnerId(int partnerId) async {
+    await _storage.write(key: _partnerIdKey, value: partnerId.toString());
+  }
+
+  Future<int?> getPartnerId() async {
+    final partnerIdStr = await _storage.read(key: _partnerIdKey);
+    if (partnerIdStr != null) {
+      return int.tryParse(partnerIdStr);
+    }
+    return null;
+  }
+
+  Future<void> deletePartnerId() async {
+    await _storage.delete(key: _partnerIdKey);
   }
 
   // Conversation Settings

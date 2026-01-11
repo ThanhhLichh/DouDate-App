@@ -66,32 +66,73 @@ class ChatRepository {
   // ==================== CONVERSATION SETTINGS ====================
 
   Future<ApiResponse<ConversationSettings>> getConversationSettings(
-    String conversationId,
+    int coupleId,
   ) async {
-    await Future.delayed(const Duration(milliseconds: 300));
+    try {
+      final token = await _storageService.getToken();
+      if (token == null) {
+        return ApiResponse.error(message: 'No authentication token found');
+      }
 
-    final mockSettings = ConversationSettings(
-      conversationId: conversationId,
-      bubbleColor: '#0084FF',
-      quickEmoji: '❤️',
-      yourNickname: null,
-      partnerNickname: null,
-    );
+      final response = await _apiClient.get<ConversationSettings>(
+        ApiConfig.getChatSettings(coupleId),
+        token: token,
+        fromJsonT: (json) => ConversationSettings.fromJson(json),
+      );
 
-    return ApiResponse.success(data: mockSettings);
+      return response;
+    } catch (e) {
+      return ApiResponse.error(
+        message: 'Failed to load settings: ${e.toString()}',
+      );
+    }
   }
 
   Future<ApiResponse<ConversationSettings>> updateConversationSettings(
-    String conversationId,
+    int coupleId,
     ConversationSettings settings,
   ) async {
-    await Future.delayed(const Duration(milliseconds: 300));
-    return ApiResponse.success(data: settings);
+    try {
+      final token = await _storageService.getToken();
+      if (token == null) {
+        return ApiResponse.error(message: 'No authentication token found');
+      }
+
+      // Prepare request body (exclude couple_id from body, it's in URL)
+      final requestBody = {
+        'bubble_color': settings.bubbleColor,
+        'quick_emoji': settings.quickEmoji,
+        'background_theme': settings.backgroundTheme.name,
+        'your_nickname': settings.yourNickname,
+        'partner_nickname': settings.partnerNickname,
+      };
+
+      final response = await _apiClient.put<Map<String, dynamic>>(
+        ApiConfig.updateChatSettings(coupleId),
+        token: token,
+        data: requestBody,
+      );
+
+      if (response.success) {
+        // Since PUT returns just a success message, return the settings we sent
+        // (they're already validated by backend if success=true)
+        return ApiResponse.success(
+          message: 'Settings updated successfully',
+          data: settings,
+        );
+      } else {
+        return ApiResponse.error(
+          message: response.message ?? 'Failed to update settings',
+        );
+      }
+    } catch (e) {
+      return ApiResponse.error(
+        message: 'Failed to update settings: ${e.toString()}',
+      );
+    }
   }
 
-  Future<ApiResponse<List<MediaItem>>> getMediaItems(
-    String conversationId,
-  ) async {
+  Future<ApiResponse<List<MediaItem>>> getMediaItems(int conversationId) async {
     await Future.delayed(const Duration(milliseconds: 500));
 
     final mockMedia = <MediaItem>[
