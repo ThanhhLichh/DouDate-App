@@ -81,7 +81,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 // Profile Avatar
                 ProfileAvatar(
                   avatarUrl: controller.userProfile?.avatarUrl,
-                  onEdit: controller.updateAvatar,
+                  onEdit: () => _showAvatarSourceDialog(context),
                   theme: theme,
                 ),
 
@@ -193,6 +193,123 @@ class _SettingsPageState extends State<SettingsPage> {
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showAvatarSourceDialog(BuildContext context) async {
+    final controller = context.read<SettingsController>();
+    final theme = context.read<DashboardThemeProvider>().currentTheme;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Handle bar
+            Container(
+              width: 40,
+              height: 4,
+              margin: const EdgeInsets.only(bottom: 20),
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+
+            // Title
+            Text(
+              'Choose Avatar Source',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: theme.textPrimaryColor,
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            // Gallery option
+            ListTile(
+              leading: Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: theme.primaryColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(Icons.photo_library, color: theme.primaryColor),
+              ),
+              title: const Text('Choose from Gallery'),
+              subtitle: const Text('Pick a photo from your device'),
+              onTap: () async {
+                Navigator.pop(context);
+                final success = await controller.updateAvatar();
+                if (success && context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Avatar updated successfully!'),
+                      backgroundColor: Colors.green,
+                      duration: Duration(seconds: 2),
+                    ),
+                  );
+                } else if (controller.errorMessage != null && context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(controller.errorMessage!),
+                      backgroundColor: Colors.red,
+                      duration: const Duration(seconds: 3),
+                    ),
+                  );
+                }
+              },
+            ),
+
+            const Divider(),
+
+            // Camera option
+            ListTile(
+              leading: Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: theme.accentColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(Icons.camera_alt, color: theme.accentColor),
+              ),
+              title: const Text('Take a Photo'),
+              subtitle: const Text('Capture a new photo'),
+              onTap: () async {
+                Navigator.pop(context);
+                final success = await controller.takePhotoForAvatar();
+                if (success && context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Avatar updated successfully!'),
+                      backgroundColor: Colors.green,
+                      duration: Duration(seconds: 2),
+                    ),
+                  );
+                } else if (controller.errorMessage != null && context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(controller.errorMessage!),
+                      backgroundColor: Colors.red,
+                      duration: const Duration(seconds: 3),
+                    ),
+                  );
+                }
+              },
+            ),
+
+            const SizedBox(height: 10),
+          ],
         ),
       ),
     );

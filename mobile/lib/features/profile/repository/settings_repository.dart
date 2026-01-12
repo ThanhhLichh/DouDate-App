@@ -1,6 +1,3 @@
-import 'dart:io';
-import 'package:dio/dio.dart';
-
 import '../../../core/services/api_client.dart';
 import '../../../core/models/api_response.dart';
 import '../models/user_profile.dart';
@@ -46,22 +43,17 @@ class SettingsRepository {
   }
 
   // Update Avatar
-  Future<ApiResponse<String>> updateAvatar(String token, File imageFile) async {
+  Future<ApiResponse<UserProfile>> updateAvatarUrl(
+    String token,
+    String avatarUrl,
+  ) async {
     try {
-      final formData = FormData.fromMap({
-        'avatar': await MultipartFile.fromFile(
-          imageFile.path,
-          filename: imageFile.path.split('/').last,
-        ),
-      });
-
-      final response = await _apiClient.put<String>(
+      final response = await _apiClient.put<UserProfile>(
         ApiConfig.updateUser,
         token: token,
-        data: formData,
-        fromJsonT: (json) => json['avatar_url'] as String,
+        data: {'avatar_url': avatarUrl},
+        fromJsonT: (json) => UserProfile.fromJson(json),
       );
-
       return response;
     } catch (e) {
       return ApiResponse.error(

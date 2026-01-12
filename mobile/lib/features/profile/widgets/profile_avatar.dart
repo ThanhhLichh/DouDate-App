@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../../../core/utils/responsive_helper.dart';
 import '../../../core/constants/app_dimensions.dart';
 
@@ -29,7 +30,7 @@ class ProfileAvatar extends StatelessWidget {
           ),
         ),
 
-        // Avatar
+        // Avatar Container
         Container(
           width: context.space(100),
           height: context.space(100),
@@ -45,12 +46,27 @@ class ProfileAvatar extends StatelessWidget {
             ],
           ),
           child: ClipOval(
-            child: avatarUrl != null
-                ? Image.network(
-                    avatarUrl!,
+            child: avatarUrl != null && avatarUrl!.isNotEmpty
+                ? CachedNetworkImage(
+                    imageUrl: avatarUrl!,
                     fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) =>
+                    width: context.space(100),
+                    height: context.space(100),
+                    placeholder: (context, url) => Container(
+                      color: theme.primaryColor.withOpacity(0.2),
+                      child: Center(
+                        child: CircularProgressIndicator(
+                          color: theme.accentColor,
+                          strokeWidth: 2,
+                        ),
+                      ),
+                    ),
+                    errorWidget: (context, url, error) =>
                         _buildDefaultAvatar(context),
+                    memCacheWidth: 200,
+                    memCacheHeight: 200,
+                    maxWidthDiskCache: 400,
+                    maxHeightDiskCache: 400,
                   )
                 : _buildDefaultAvatar(context),
           ),
@@ -89,7 +105,12 @@ class ProfileAvatar extends StatelessWidget {
 
   Widget _buildDefaultAvatar(BuildContext context) {
     return Container(
-      color: theme.primaryColor.withOpacity(0.3),
+      width: context.space(100),
+      height: context.space(100),
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: theme.primaryColor.withOpacity(0.3),
+      ),
       child: Icon(
         Icons.person,
         size: context.space(50),
