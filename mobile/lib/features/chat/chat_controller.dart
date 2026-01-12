@@ -5,11 +5,13 @@ import 'models/conversation_settings_models.dart';
 import 'repository/chat_repository.dart';
 import '../../core/websocket/chat_websocket_service.dart';
 import 'dart:async';
+import '../home/home_controller.dart';
 
 class ChatController extends ChangeNotifier {
   final ChatRepository _repository = ChatRepository();
   final StorageService _storageService = StorageService();
   final ChatWebSocketService _chatSocketService = ChatWebSocketService();
+  final HomeController? homeController;
 
   List<Message> _messages = [];
   Conversation? _conversation;
@@ -35,7 +37,12 @@ class ChatController extends ChangeNotifier {
   StreamSubscription? _presenceSubscription;
   StreamSubscription? _settingsUpdateSubscription;
 
-  ChatController() {
+  String? get partnerAvatar => homeController?.dashboardData?.partnerAvatar;
+  String? get partnerName => homeController?.dashboardData?.partnerName;
+  String? get yourAvatar => homeController?.dashboardData?.yourAvatar;
+  String? get yourName => homeController?.dashboardData?.yourName;
+
+  ChatController({this.homeController}) {
     _loadCurrentUserId();
     _loadPartnerId();
     _listenToWebSocket();
@@ -66,13 +73,14 @@ class ChatController extends ChangeNotifier {
 
       if (_conversation != null && _currentUserId != null) {
         final isMe = message.senderId == _currentUserId;
+
         enrichedMessage = message.copyWith(
           senderName: isMe
-              ? _conversation!.yourName
-              : _conversation!.partnerName,
+              ? (yourName ?? _conversation!.yourName)
+              : (partnerName ?? _conversation!.partnerName),
           senderAvatar: isMe
-              ? _conversation!.yourAvatar
-              : _conversation!.partnerAvatar,
+              ? (yourAvatar ?? _conversation!.yourAvatar)
+              : (partnerAvatar ?? _conversation!.partnerAvatar),
         );
       }
 
@@ -81,7 +89,6 @@ class ChatController extends ChangeNotifier {
         return;
       }
 
-      // Kiểm tra message đã tồn tại chưa
       final existingIndex = _messages.indexWhere((m) => m.id == message.id);
       if (existingIndex == -1) {
         _messages.add(enrichedMessage);
@@ -254,16 +261,16 @@ class ChatController extends ChangeNotifier {
       final response = await _repository.getMessages(_conversation!.coupleId);
 
       if (response.success && response.data != null) {
-        // Enrich messages with sender info
+        // Enrich messages với sender info từ CoupleDashboard
         _messages = response.data!.map((msg) {
           final isMe = msg.senderId == _currentUserId;
           return msg.copyWith(
             senderName: isMe
-                ? _conversation!.yourName
-                : _conversation!.partnerName,
+                ? (yourName ?? _conversation!.yourName)
+                : (partnerName ?? _conversation!.partnerName),
             senderAvatar: isMe
-                ? _conversation!.yourAvatar
-                : _conversation!.partnerAvatar,
+                ? (yourAvatar ?? _conversation!.yourAvatar)
+                : (partnerAvatar ?? _conversation!.partnerAvatar),
           );
         }).toList();
 

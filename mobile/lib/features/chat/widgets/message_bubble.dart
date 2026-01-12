@@ -18,6 +18,11 @@ class MessageBubble extends StatelessWidget {
     final settings = controller.settings;
     final bubbleColor = settings?.bubbleColor ?? '#0084FF';
 
+    final avatar =
+        controller.partnerAvatar ?? controller.conversation?.partnerAvatar;
+
+    final hasAvatar = avatar != null && avatar.isNotEmpty;
+
     return Padding(
       padding: EdgeInsets.fromLTRB(
         isMe ? context.space(4) : context.space(12),
@@ -35,14 +40,18 @@ class MessageBubble extends StatelessWidget {
             CircleAvatar(
               radius: context.space(14),
               backgroundColor: Colors.grey[300],
-              child: Text(
-                message.senderName![0].toUpperCase(),
-                style: TextStyle(
-                  fontSize: context.sp(AppDimensions.fontXS),
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+              backgroundImage: hasAvatar ? NetworkImage(avatar) : null,
+              child: hasAvatar
+                  ? null
+                  : Text(
+                      message.senderName![0].toUpperCase(),
+                      style: TextStyle(
+                        fontSize: context.sp(AppDimensions.fontXS),
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
             ),
+
             ResponsiveHelper.horizontalSpace(context, AppDimensions.spaceS),
           ],
 

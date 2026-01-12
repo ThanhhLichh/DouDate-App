@@ -1,5 +1,3 @@
-import 'package:flutter/material.dart';
-
 // Message Model
 class Message {
   final int id;

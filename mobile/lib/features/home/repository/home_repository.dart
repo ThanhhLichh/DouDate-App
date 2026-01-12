@@ -77,26 +77,6 @@ class HomeRepository {
     }
   }
 
-  // Get Couple Stats
-  Future<ApiResponse<CoupleStats>> getCoupleStats(String token) async {
-    try {
-      final response = await _apiClient.get<Map<String, dynamic>>(
-        ApiConfig.coupleStats,
-        token: token,
-      );
-
-      if (response.success && response.data != null) {
-        return ApiResponse.success(data: CoupleStats.fromJson(response.data!));
-      } else {
-        return ApiResponse.error(
-          message: response.message ?? 'Failed to load stats',
-        );
-      }
-    } catch (e) {
-      return ApiResponse.error(message: 'An error occurred: ${e.toString()}');
-    }
-  }
-
   // Create QR Code
   Future<ApiResponse<QRCodeData>> createQRCode(String token) async {
     try {

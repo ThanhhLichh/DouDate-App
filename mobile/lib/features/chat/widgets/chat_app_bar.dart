@@ -29,8 +29,12 @@ class ChatAppBar extends StatelessWidget implements PreferredSizeWidget {
     final controller = context.watch<ChatController>();
     final settings = controller.settings;
 
-    // Use nickname if set, otherwise use original name
-    final displayName = settings?.partnerNickname ?? conversation.partnerName;
+    final displayName =
+        settings?.partnerNickname ??
+        controller.partnerName ??
+        conversation.partnerName;
+
+    final avatar = controller.partnerAvatar ?? conversation.partnerAvatar;
 
     return AppBar(
       backgroundColor: Colors.white,
@@ -46,7 +50,10 @@ class ChatAppBar extends StatelessWidget implements PreferredSizeWidget {
             children: [
               CircleAvatar(
                 radius: context.space(20),
-                backgroundImage: const AssetImage(ThemeConstants.defaultAvatar),
+                backgroundImage: avatar?.isNotEmpty == true
+                    ? NetworkImage(avatar!)
+                    : const AssetImage(ThemeConstants.defaultAvatar)
+                          as ImageProvider,
               ),
               if (conversation.isOnline)
                 Positioned(

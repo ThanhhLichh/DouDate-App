@@ -56,8 +56,8 @@ class CoupleCard extends StatelessWidget {
                 children: [
                   _buildAvatar(
                     context,
-                    data.partnerAvatar ?? '',
-                    theme.partnerBorderColor,
+                    data.yourAvatar ?? '',
+                    theme.yourBorderColor,
                   ),
                   Icon(
                     Icons.favorite,
@@ -66,8 +66,8 @@ class CoupleCard extends StatelessWidget {
                   ),
                   _buildAvatar(
                     context,
-                    data.yourAvatar ?? '',
-                    theme.yourBorderColor,
+                    data.partnerAvatar ?? '',
+                    theme.partnerBorderColor,
                   ),
                 ],
               ),
@@ -113,7 +113,7 @@ class CoupleCard extends StatelessWidget {
     );
   }
 
-  Widget _buildAvatar(BuildContext context, String path, Color color) {
+  Widget _buildAvatar(BuildContext context, String avatarUrl, Color color) {
     return Container(
       padding: EdgeInsets.all(context.space(3)),
       decoration: BoxDecoration(
@@ -122,7 +122,10 @@ class CoupleCard extends StatelessWidget {
       ),
       child: CircleAvatar(
         radius: context.space(40),
-        backgroundImage: const AssetImage(ThemeConstants.defaultAvatar),
+        backgroundColor: Colors.transparent,
+        backgroundImage: avatarUrl.isNotEmpty
+            ? NetworkImage(avatarUrl)
+            : const AssetImage(ThemeConstants.defaultAvatar) as ImageProvider,
       ),
     );
   }

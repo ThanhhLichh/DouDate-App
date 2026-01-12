@@ -51,29 +51,3 @@ class CoupleDashboard {
     'today_quote': todayQuote,
   };
 }
-
-class CoupleStats {
-  final int messageCount;
-  final int momentCount;
-  final int memoryCount;
-
-  CoupleStats({
-    required this.messageCount,
-    required this.momentCount,
-    required this.memoryCount,
-  });
-
-  factory CoupleStats.fromJson(Map<String, dynamic> json) {
-    return CoupleStats(
-      messageCount: json['message_count'] ?? 0,
-      momentCount: json['moment_count'] ?? 0,
-      memoryCount: json['memory_count'] ?? 0,
-    );
-  }
-
-  Map<String, dynamic> toJson() => {
-    'message_count': messageCount,
-    'moment_count': momentCount,
-    'memory_count': memoryCount,
-  };
-}

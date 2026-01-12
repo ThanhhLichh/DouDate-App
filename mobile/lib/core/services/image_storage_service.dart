@@ -51,56 +51,6 @@ class ImageStorageService {
     }
   }
 
-  /// Save partner avatar image
-  Future<String> savePartnerAvatar(File imageFile) async {
-    try {
-      await _validateImage(imageFile);
-      final processedImage = await _processImage(imageFile, isAvatar: true);
-      final themeDir = await _getThemeImagesDirectory();
-      final targetPath = path.join(
-        themeDir.path,
-        ThemeConstants.partnerAvatarFileName,
-      );
-
-      final targetFile = File(targetPath);
-      await targetFile.writeAsBytes(processedImage);
-
-      return path.join(
-        ThemeConstants.themeImagesDir,
-        ThemeConstants.partnerAvatarFileName,
-      );
-    } catch (e) {
-      throw ImageStorageException(
-        'Failed to save partner avatar: ${e.toString()}',
-      );
-    }
-  }
-
-  /// Save your avatar image
-  Future<String> saveYourAvatar(File imageFile) async {
-    try {
-      await _validateImage(imageFile);
-      final processedImage = await _processImage(imageFile, isAvatar: true);
-      final themeDir = await _getThemeImagesDirectory();
-      final targetPath = path.join(
-        themeDir.path,
-        ThemeConstants.yourAvatarFileName,
-      );
-
-      final targetFile = File(targetPath);
-      await targetFile.writeAsBytes(processedImage);
-
-      return path.join(
-        ThemeConstants.themeImagesDir,
-        ThemeConstants.yourAvatarFileName,
-      );
-    } catch (e) {
-      throw ImageStorageException(
-        'Failed to save your avatar: ${e.toString()}',
-      );
-    }
-  }
-
   /// Load image from relative path
   Future<File?> loadImage(String? relativePath) async {
     if (relativePath == null || relativePath.isEmpty) {

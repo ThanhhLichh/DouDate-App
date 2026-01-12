@@ -42,7 +42,13 @@ Future<void> main() async {
         ChangeNotifierProvider(create: (_) => HomeController()),
 
         // Chat
-        ChangeNotifierProvider(create: (_) => ChatController()),
+        ChangeNotifierProxyProvider<HomeController, ChatController>(
+          create: (context) =>
+              ChatController(homeController: context.read<HomeController>()),
+          update: (context, homeController, previousChatController) =>
+              previousChatController ??
+              ChatController(homeController: homeController),
+        ),
 
         // Memory
         ChangeNotifierProvider(create: (_) => MemoryController()),

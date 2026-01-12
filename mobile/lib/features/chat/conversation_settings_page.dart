@@ -93,8 +93,15 @@ class _ConversationSettingsPageState extends State<ConversationSettingsPage> {
     conversation,
     ConversationSettings? settings,
   ) {
+    final controller = context.watch<ChatController>();
+
     // Use nickname if set
-    final displayName = settings?.partnerNickname ?? conversation.partnerName;
+    final displayName =
+        settings?.partnerNickname ??
+        controller.partnerName ??
+        conversation.partnerName;
+
+    final avatar = controller.partnerAvatar ?? conversation.partnerAvatar;
 
     return Container(
       color: Colors.white,
@@ -105,7 +112,10 @@ class _ConversationSettingsPageState extends State<ConversationSettingsPage> {
             children: [
               CircleAvatar(
                 radius: context.space(40),
-                backgroundImage: const AssetImage(ThemeConstants.defaultAvatar),
+                backgroundImage: avatar?.isNotEmpty == true
+                    ? NetworkImage(avatar!)
+                    : const AssetImage(ThemeConstants.defaultAvatar)
+                          as ImageProvider,
               ),
               if (conversation.isOnline)
                 Positioned(

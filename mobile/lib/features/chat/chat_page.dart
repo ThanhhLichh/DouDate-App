@@ -278,9 +278,10 @@ class _ChatPageState extends State<ChatPage> {
           // Lấy currentUserId từ controller
           final myId = controller.currentUserId;
 
-          // So sánh bằng cách ép kiểu về String để tránh mọi sai lệch runtime type
           final isMe =
-              myId != null && message.senderId.toString() == myId.toString();
+              controller.currentUserId != null &&
+              message.senderId.toString() ==
+                  controller.currentUserId.toString();
 
           final showDateSeparator =
               index == 0 ||
