@@ -159,8 +159,30 @@ class ChatRepository {
     return ApiResponse.success(data: mockMedia);
   }
 
-  Future<ApiResponse<bool>> reactToMessage(int messageId, String emoji) async {
-    await Future.delayed(const Duration(milliseconds: 200));
-    return ApiResponse.success(data: true);
+  Future<ApiResponse<Map<String, dynamic>>> reactToMessage(
+    int messageId,
+    String? emoji, // null = remove
+  ) async {
+    try {
+      final token = await _storageService.getToken();
+      if (token == null) {
+        return ApiResponse.error(message: 'No authentication token found');
+      }
+
+      final request = ReactionRequest(emoji: emoji);
+
+      final response = await _apiClient.post<Map<String, dynamic>>(
+        ApiConfig.reactToMessage(messageId),
+        token: token,
+        data: request.toJson(),
+        fromJsonT: (json) => json as Map<String, dynamic>,
+      );
+
+      return response;
+    } catch (e) {
+      return ApiResponse.error(
+        message: 'Failed to react to message: ${e.toString()}',
+      );
+    }
   }
 }

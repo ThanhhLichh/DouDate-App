@@ -114,8 +114,8 @@ class MessageBubble extends StatelessWidget {
                           ),
                         ),
 
-                        if (message.reactions != null &&
-                            message.reactions!.isNotEmpty)
+                        if (message.reactionsByUserId != null &&
+                            message.reactionsByUserId!.isNotEmpty)
                           Positioned(
                             bottom: -context.space(6),
                             right: 0,
@@ -138,20 +138,22 @@ class MessageBubble extends StatelessWidget {
                                 ),
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
-                                  children: message.reactions!.map((emoji) {
-                                    return Padding(
-                                      padding: EdgeInsets.symmetric(
-                                        horizontal: context.space(0.5),
-                                      ),
-                                      child: Text(
-                                        emoji,
-                                        style: TextStyle(
-                                          fontSize: context.sp(9),
-                                          height: 1.2,
-                                        ),
-                                      ),
-                                    );
-                                  }).toList(),
+                                  children: message.reactionsByUserId!.values
+                                      .map((emoji) {
+                                        return Padding(
+                                          padding: EdgeInsets.symmetric(
+                                            horizontal: context.space(0.5),
+                                          ),
+                                          child: Text(
+                                            emoji,
+                                            style: TextStyle(
+                                              fontSize: context.sp(9),
+                                              height: 1.2,
+                                            ),
+                                          ),
+                                        );
+                                      })
+                                      .toList(),
                                 ),
                               ),
                             ),

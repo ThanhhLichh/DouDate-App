@@ -18,25 +18,13 @@ class CoupleCard extends StatelessWidget {
     return FutureBuilder<File?>(
       future: context.read<DashboardThemeProvider>().getCoupleBackgroundImage(),
       builder: (context, snapshot) {
-        final hasCustomBackground = snapshot.hasData && snapshot.data != null;
-
         return Container(
           padding: EdgeInsets.symmetric(
             vertical: context.space(30),
             horizontal: context.space(20),
           ),
           decoration: BoxDecoration(
-            image: hasCustomBackground
-                ? DecorationImage(
-                    image: FileImage(snapshot.data!),
-                    fit: BoxFit.cover,
-                    opacity: 0.95,
-                  )
-                : const DecorationImage(
-                    image: AssetImage(ThemeConstants.defaultCoupleBackground),
-                    fit: BoxFit.cover,
-                    opacity: 0.95,
-                  ),
+            color: theme.cardBackground,
             borderRadius: ResponsiveHelper.radius(
               context,
               AppDimensions.radiusXL,

@@ -5,12 +5,12 @@ class Message {
   final int senderId;
   final String content;
   final DateTime createdAt;
+  final Map<int, String>? reactionsByUserId;
 
   // UI fields
   final String? senderName;
   final String? senderAvatar;
   final bool isRead;
-  final List<String>? reactions;
 
   Message({
     required this.id,
@@ -21,7 +21,7 @@ class Message {
     this.senderName,
     this.senderAvatar,
     this.isRead = true,
-    this.reactions,
+    this.reactionsByUserId,
   });
 
   factory Message.fromJson(Map<String, dynamic> json) {
@@ -34,8 +34,11 @@ class Message {
           ? DateTime.parse(json['created_at'])
           : DateTime.now(),
       isRead: json['is_read'] ?? true,
-      reactions: json['reactions'] != null
-          ? List<String>.from(json['reactions'])
+      reactionsByUserId: json['reactions'] != null
+          ? {
+              for (var r in (json['reactions'] as List))
+                r['user_id'] as int: r['emoji'] as String,
+            }
           : null,
     );
   }
@@ -56,7 +59,7 @@ class Message {
     String? content,
     DateTime? createdAt,
     bool? isRead,
-    List<String>? reactions,
+    Map<int, String>? reactionsByUserId,
   }) {
     return Message(
       id: id ?? this.id,
@@ -67,9 +70,17 @@ class Message {
       content: content ?? this.content,
       createdAt: createdAt ?? this.createdAt,
       isRead: isRead ?? this.isRead,
-      reactions: reactions ?? this.reactions,
+      reactionsByUserId: reactionsByUserId ?? this.reactionsByUserId,
     );
   }
+
+  // Helper getters
+  List<String> get reactions => reactionsByUserId?.values.toList() ?? [];
+
+  String? getReactionByUser(int userId) => reactionsByUserId?[userId];
+
+  bool hasReactionFromUser(int userId) =>
+      reactionsByUserId?.containsKey(userId) ?? false;
 }
 
 enum MessageType { text, image, sticker, voice, video }
@@ -151,4 +162,61 @@ class Conversation {
       lastSeen: lastSeen ?? this.lastSeen,
     );
   }
+}
+
+// Message Reaction Model
+class MessageReaction {
+  final int? id;
+  final int messageId;
+  final int userId;
+  final String? emoji;
+  final DateTime? createdAt;
+
+  MessageReaction({
+    this.id,
+    required this.messageId,
+    required this.userId,
+    this.emoji,
+    this.createdAt,
+  });
+
+  factory MessageReaction.fromJson(Map<String, dynamic> json) {
+    return MessageReaction(
+      id: json['id'],
+      messageId: json['message_id'],
+      userId: json['user_id'],
+      emoji: json['emoji'],
+      createdAt: json['created_at'] != null
+          ? DateTime.parse(json['created_at'])
+          : null,
+    );
+  }
+
+  // Factory cho WebSocket event
+  factory MessageReaction.fromWebSocket(Map<String, dynamic> json) {
+    return MessageReaction(
+      messageId: json['message_id'],
+      userId: json['user_id'],
+      emoji: json['emoji'],
+    );
+  }
+
+  // Factory cho DB record
+  // factory MessageReaction.fromDatabase(Map<String, dynamic> json) {
+  //   return MessageReaction(
+  //     id: json['id'],
+  //     messageId: json['message_id'],
+  //     userId: json['user_id'],
+  //     emoji: json['emoji'],
+  //     createdAt: DateTime.parse(json['created_at']),
+  //   );
+  // }
+}
+
+class ReactionRequest {
+  final String? emoji;
+
+  ReactionRequest({this.emoji});
+
+  Map<String, dynamic> toJson() => {'emoji': emoji};
 }

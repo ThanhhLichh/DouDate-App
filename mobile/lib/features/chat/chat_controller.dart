@@ -36,6 +36,7 @@ class ChatController extends ChangeNotifier {
 
   StreamSubscription? _presenceSubscription;
   StreamSubscription? _settingsUpdateSubscription;
+  StreamSubscription? _reactionSubscription;
 
   String? get partnerAvatar => homeController?.dashboardData?.partnerAvatar;
   String? get partnerName => homeController?.dashboardData?.partnerName;
@@ -48,6 +49,7 @@ class ChatController extends ChangeNotifier {
     _listenToWebSocket();
     _listenToPresence();
     _listenToSettingsUpdate();
+    _listenToReactions();
   }
 
   Future<void> _loadCurrentUserId() async {
@@ -141,6 +143,15 @@ class ChatController extends ChangeNotifier {
             print('Settings reloaded successfully');
           }
         });
+  }
+
+  // Listen reaction emoji events
+  void _listenToReactions() {
+    _reactionSubscription = _chatSocketService.reactionStream.listen((
+      reaction,
+    ) {
+      _handleReactionEvent(reaction);
+    });
   }
 
   Future<void> _requestPresenceState() async {
@@ -261,7 +272,6 @@ class ChatController extends ChangeNotifier {
       final response = await _repository.getMessages(_conversation!.coupleId);
 
       if (response.success && response.data != null) {
-        // Enrich messages với sender info từ CoupleDashboard
         _messages = response.data!.map((msg) {
           final isMe = msg.senderId == _currentUserId;
           return msg.copyWith(
@@ -277,6 +287,8 @@ class ChatController extends ChangeNotifier {
         _errorMessage = null;
 
         await _repository.markAsRead(_conversation!.coupleId);
+
+        notifyListeners();
 
         if (_messages.isNotEmpty) {
           _conversation = _conversation!.copyWith(
@@ -318,7 +330,32 @@ class ChatController extends ChangeNotifier {
     }
   }
 
-  int get unreadCount => _conversation?.unreadCount ?? 0;
+  void _handleReactionEvent(MessageReaction reaction) {
+    final messageIndex = _messages.indexWhere(
+      (m) => m.id == reaction.messageId,
+    );
+    if (messageIndex == -1) return;
+
+    final message = _messages[messageIndex];
+    final currentReactions = Map<int, String>.from(
+      message.reactionsByUserId ?? {},
+    );
+
+    if (reaction.emoji == null) {
+      currentReactions.remove(reaction.userId);
+    } else {
+      currentReactions[reaction.userId] = reaction.emoji!;
+    }
+
+    _messages[messageIndex] = message.copyWith(
+      reactionsByUserId: currentReactions.isEmpty ? null : currentReactions,
+    );
+
+    notifyListeners();
+    print(
+      'Reaction updated: message ${reaction.messageId}, user ${reaction.userId}, emoji: ${reaction.emoji}',
+    );
+  }
 
   Future<void> refreshMessages() async {
     await fetchMessages();
@@ -462,28 +499,50 @@ class ChatController extends ChangeNotifier {
   }
 
   Future<bool> reactToMessage(int messageId, String emoji) async {
+    if (_currentUserId == null) return false;
+
     try {
-      final response = await _repository.reactToMessage(messageId, emoji);
+      // Optimistic update
+      final messageIndex = _messages.indexWhere((m) => m.id == messageId);
+      if (messageIndex == -1) return false;
 
-      if (response.success) {
-        final index = _messages.indexWhere((m) => m.id == messageId);
-        if (index != -1) {
-          final currentReactions = _messages[index].reactions ?? [];
-          final newReactions = [...currentReactions];
+      final message = _messages[messageIndex];
+      final currentReactions = Map<int, String>.from(
+        message.reactionsByUserId ?? {},
+      );
+      final existingEmoji = currentReactions[_currentUserId!];
 
-          if (newReactions.contains(emoji)) {
-            newReactions.remove(emoji);
-          } else {
-            newReactions.add(emoji);
-          }
-
-          _messages[index] = _messages[index].copyWith(reactions: newReactions);
-          notifyListeners();
-        }
-        return true;
+      String? emojiToSend;
+      if (existingEmoji == emoji) {
+        // Tap lại cùng emoji → remove
+        currentReactions.remove(_currentUserId!);
+        emojiToSend = null;
+      } else {
+        // Thả emoji mới (replace cũ)
+        currentReactions[_currentUserId!] = emoji;
+        emojiToSend = emoji;
       }
-      return false;
+
+      // Update UI ngay
+      _messages[messageIndex] = message.copyWith(
+        reactionsByUserId: currentReactions.isEmpty ? null : currentReactions,
+      );
+      notifyListeners();
+
+      // Call API
+      final response = await _repository.reactToMessage(messageId, emojiToSend);
+
+      if (!response.success) {
+        // Rollback nếu fail
+        _messages[messageIndex] = message;
+        notifyListeners();
+        _errorMessage = response.message ?? 'Failed to react';
+        return false;
+      }
+
+      return true;
     } catch (e) {
+      _errorMessage = 'Failed to react: $e';
       return false;
     }
   }
@@ -492,6 +551,7 @@ class ChatController extends ChangeNotifier {
   void dispose() {
     _presenceSubscription?.cancel();
     _settingsUpdateSubscription?.cancel();
+    _reactionSubscription?.cancel();
     _chatSocketService.dispose();
     super.dispose();
   }

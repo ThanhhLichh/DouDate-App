@@ -34,6 +34,9 @@ class ApiConfig {
 
   // Chat/Message Endpoints
   static const String getMessages = '/messages';
+  // static const String reactToMessage = '/messages';
+  static String reactToMessage(int messageId) =>
+      '/messages/$messageId/reaction';
   static const String chatWebSocket = '/ws/chat';
   static String getChatSettings(int coupleId) =>
       '/couple/$coupleId/chat-settings';

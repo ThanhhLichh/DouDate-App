@@ -26,20 +26,11 @@ class _ChatPageState extends State<ChatPage> {
       if (controller.conversation == null) {
         controller.initializeConversation().then((_) {
           if (controller.conversation != null) {
-            controller.fetchMessages().then((_) {
-              // Scroll sau khi load xong messages
-              if (controller.messages.isNotEmpty) {
-                _scrollToBottom();
-              }
-            });
+            controller.fetchMessages();
           }
         });
       } else {
-        controller.fetchMessages().then((_) {
-          if (controller.messages.isNotEmpty) {
-            _scrollToBottom();
-          }
-        });
+        controller.fetchMessages();
       }
     });
   }
@@ -50,26 +41,18 @@ class _ChatPageState extends State<ChatPage> {
     super.dispose();
   }
 
-  void _scrollToBottom() {
-    if (!mounted || !_scrollController.hasClients) return;
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted || !_scrollController.hasClients) return;
-
-      _scrollController.animateTo(
-        _scrollController.position.maxScrollExtent,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeOut,
-      );
-    });
-  }
-
   Future<void> _handleSendMessage(String content) async {
     final controller = context.read<ChatController>();
     final success = await controller.sendMessage(content);
 
     if (success) {
-      _scrollToBottom();
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          0, // Scroll về đầu list (bottom của chat)
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
     } else {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -256,27 +239,19 @@ class _ChatPageState extends State<ChatPage> {
       );
     }
 
-    // Scroll to bottom when messages load
-    // WidgetsBinding.instance.addPostFrameCallback((_) {
-    //   if (controller.messages.isNotEmpty) {
-    //     _scrollToBottom();
-    //   }
-    // });
-
     return RefreshIndicator(
       onRefresh: _handleRefresh,
       color: const Color(0xFF0084FF),
       child: ListView.builder(
         controller: _scrollController,
+        reverse: true,
         padding: EdgeInsets.symmetric(
           vertical: context.space(AppDimensions.spaceM),
         ),
         itemCount: controller.messages.length,
         itemBuilder: (context, index) {
-          final message = controller.messages[index];
-
-          // Lấy currentUserId từ controller
-          final myId = controller.currentUserId;
+          final reversedIndex = controller.messages.length - 1 - index;
+          final message = controller.messages[reversedIndex];
 
           final isMe =
               controller.currentUserId != null &&
@@ -284,17 +259,18 @@ class _ChatPageState extends State<ChatPage> {
                   controller.currentUserId.toString();
 
           final showDateSeparator =
-              index == 0 ||
+              reversedIndex ==
+                  controller.messages.length - 1 || // Tin nhắn đầu tiên
               !_isSameDay(
-                controller.messages[index - 1].timestamp,
+                controller.messages[reversedIndex + 1].timestamp,
                 message.timestamp,
               );
 
           return Column(
             children: [
+              MessageBubble(message: message, isMe: isMe),
               if (showDateSeparator)
                 _buildDateSeparator(context, message.timestamp),
-              MessageBubble(message: message, isMe: isMe),
             ],
           );
         },

@@ -19,10 +19,12 @@ class ChatWebSocketService extends BaseWebSocketManager {
   final _messageController = StreamController<Message>.broadcast();
   final _presenceController = StreamController<PresenceEvent>.broadcast();
   final _settingsUpdateController = StreamController<void>.broadcast();
+  final _reactionController = StreamController<MessageReaction>.broadcast();
 
   Stream<Message> get messageStream => _messageController.stream;
   Stream<PresenceEvent> get presenceStream => _presenceController.stream;
   Stream<void> get settingsUpdateStream => _settingsUpdateController.stream;
+  Stream<MessageReaction> get reactionStream => _reactionController.stream;
 
   @override
   String getWebSocketUrl(dynamic params) {
@@ -52,6 +54,9 @@ class ChatWebSocketService extends BaseWebSocketManager {
         // Xử lý settings update event
         _settingsUpdateController.add(null);
         print('Chat settings updated by partner');
+      } else if (json['type'] == 'reaction') {
+        final reaction = MessageReaction.fromWebSocket(json);
+        _reactionController.add(reaction);
       } else if (type == 'ping') {
         // Ignore ping messages
         return;
