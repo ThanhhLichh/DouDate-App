@@ -75,9 +75,19 @@ class ChatWebSocketService extends BaseWebSocketManager {
     print('Chat WebSocket connection state: $isConnected');
   }
 
-  void sendMessage(String content) {
+  void sendMessage(
+    String content, {
+    String type = 'text',
+    String? imgUrl,
+    String? thumbnailUrl,
+  }) {
     if (isConnected) {
-      sendData(jsonEncode({'content': content}));
+      final Map<String, dynamic> payload = {'type': type, 'content': content};
+
+      if (imgUrl != null) payload['img_url'] = imgUrl;
+      if (thumbnailUrl != null) payload['thumbnail_url'] = thumbnailUrl;
+
+      sendData(jsonEncode(payload));
     }
   }
 

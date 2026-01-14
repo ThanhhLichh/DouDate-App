@@ -4,19 +4,21 @@ import 'models/chat_models.dart';
 import 'models/conversation_settings_models.dart';
 import 'repository/chat_repository.dart';
 import '../../core/websocket/chat_websocket_service.dart';
+import '../../core/models/cloudinary_models.dart';
 import 'dart:async';
 import '../home/home_controller.dart';
+import '../../core/services/image_upload_service.dart';
 
 class ChatController extends ChangeNotifier {
   final ChatRepository _repository = ChatRepository();
   final StorageService _storageService = StorageService();
   final ChatWebSocketService _chatSocketService = ChatWebSocketService();
   final HomeController? homeController;
+  final ImageUploadService _imageUploadService = ImageUploadService();
 
   List<Message> _messages = [];
   Conversation? _conversation;
   ConversationSettings? _settings;
-  List<MediaItem> _mediaItems = [];
   bool _isLoading = false;
   bool _isSending = false;
   String? _errorMessage;
@@ -26,7 +28,24 @@ class ChatController extends ChangeNotifier {
   List<Message> get messages => _messages;
   Conversation? get conversation => _conversation;
   ConversationSettings? get settings => _settings;
-  List<MediaItem> get mediaItems => _mediaItems;
+  List<MediaItem> get mediaItems {
+    return _messages
+        .where(
+          (m) => m.type == MessageType.image && (m.imgUrl?.isNotEmpty ?? false),
+        )
+        .map(
+          (m) => MediaItem(
+            id: m.id.toString(),
+            url: m.imgUrl!,
+            type: MediaType.image,
+            timestamp: m.createdAt,
+          ),
+        )
+        .toList()
+        .reversed
+        .toList();
+  }
+
   bool get isLoading => _isLoading;
   bool get isSending => _isSending;
   String? get errorMessage => _errorMessage;
@@ -86,7 +105,15 @@ class ChatController extends ChangeNotifier {
         );
       }
 
-      if (message.id <= 0 || message.content.trim().isEmpty) {
+      bool isInvalid = message.id <= 0;
+
+      if (message.type == MessageType.text) {
+        isInvalid |= message.content.trim().isEmpty;
+      } else if (message.type == MessageType.image) {
+        isInvalid |= (message.imgUrl == null || message.imgUrl!.isEmpty);
+      }
+
+      if (isInvalid) {
         print('Invalid message received, skipping');
         return;
       }
@@ -330,6 +357,101 @@ class ChatController extends ChangeNotifier {
     }
   }
 
+  Future<void> sendImageMessages() async {
+    if (_conversation == null || !_chatSocketService.isConnected) return;
+
+    _isSending = true;
+    notifyListeners();
+
+    try {
+      // Gọi qua ImageUploadService theo đúng pattern của bạn
+      final responses = await _imageUploadService
+          .pickAndUploadMultipleChatImages(_conversation!.coupleId);
+
+      for (final res in responses) {
+        // Sử dụng URL transformation của Cloudinary để tạo thumbnail 300x300 tự động
+        final thumbUrl = res.secureUrl.replaceFirst(
+          '/upload/',
+          '/upload/w_300,h_300,c_fill/',
+        );
+
+        _chatSocketService.sendMessage(
+          '', // Content trống khi gửi ảnh
+          type: 'image',
+          imgUrl: res.secureUrl,
+          thumbnailUrl: thumbUrl,
+        );
+      }
+    } catch (e) {
+      _errorMessage = 'Failed to send images';
+    } finally {
+      _isSending = false;
+      notifyListeners();
+    }
+  }
+
+  /// Gửi nhiều ảnh từ thư viện
+  Future<void> sendImagesFromGallery() async {
+    if (_conversation == null || !_chatSocketService.isConnected) return;
+
+    _isSending = true;
+    notifyListeners();
+
+    try {
+      // Gọi Service xử lý pick và upload
+      final responses = await _imageUploadService
+          .pickAndUploadMultipleChatImages(_conversation!.coupleId);
+
+      for (final res in responses) {
+        _sendImagePayload(res);
+      }
+    } catch (e) {
+      debugPrint('Error sending gallery images: $e');
+    } finally {
+      _isSending = false;
+      notifyListeners();
+    }
+  }
+
+  /// Chụp ảnh và gửi
+  Future<void> sendImageFromCamera() async {
+    if (_conversation == null || !_chatSocketService.isConnected) return;
+
+    _isSending = true;
+    notifyListeners();
+
+    try {
+      final response = await _imageUploadService.takePhotoAndUploadChatImage(
+        _conversation!.coupleId,
+      );
+
+      if (response != null) {
+        _sendImagePayload(response);
+      }
+    } catch (e) {
+      debugPrint('Error sending camera image: $e');
+    } finally {
+      _isSending = false;
+      notifyListeners();
+    }
+  }
+
+  /// Helper để đóng gói payload và gửi qua WebSocket
+  void _sendImagePayload(CloudinaryUploadResponse res) {
+    // Tự động tạo URL thumbnail 300x300 bằng Cloudinary Transformation API
+    final thumbUrl = res.secureUrl.replaceFirst(
+      '/upload/',
+      '/upload/w_300,h_300,c_fill/',
+    );
+
+    _chatSocketService.sendMessage(
+      '', // Content trống cho tin nhắn ảnh
+      type: 'image',
+      imgUrl: res.secureUrl,
+      thumbnailUrl: thumbUrl,
+    );
+  }
+
   void _handleReactionEvent(MessageReaction reaction) {
     final messageIndex = _messages.indexWhere(
       (m) => m.id == reaction.messageId,
@@ -480,21 +602,6 @@ class ChatController extends ChangeNotifier {
       return true;
     } catch (e) {
       return false;
-    }
-  }
-
-  Future<void> loadMediaItems() async {
-    if (_conversation == null) return;
-
-    try {
-      final response = await _repository.getMediaItems(_conversation!.id);
-
-      if (response.success && response.data != null) {
-        _mediaItems = response.data!;
-        notifyListeners();
-      }
-    } catch (e) {
-      // Silent fail
     }
   }
 

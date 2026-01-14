@@ -56,7 +56,7 @@ class ChatRepository {
     }
   }
 
-  // Mark messages as read (giữ lại để tương lai)
+  // Mark messages as read
   Future<ApiResponse<bool>> markAsRead(int coupleId) async {
     // Chưa có API, trả về success
     await Future.delayed(const Duration(milliseconds: 100));
@@ -130,33 +130,6 @@ class ChatRepository {
         message: 'Failed to update settings: ${e.toString()}',
       );
     }
-  }
-
-  Future<ApiResponse<List<MediaItem>>> getMediaItems(int conversationId) async {
-    await Future.delayed(const Duration(milliseconds: 500));
-
-    final mockMedia = <MediaItem>[
-      MediaItem(
-        id: 'media_1',
-        url: 'https://picsum.photos/400/300?random=1',
-        type: MediaType.image,
-        timestamp: DateTime.now().subtract(const Duration(days: 1)),
-      ),
-      MediaItem(
-        id: 'media_2',
-        url: 'https://picsum.photos/400/300?random=2',
-        type: MediaType.image,
-        timestamp: DateTime.now().subtract(const Duration(days: 2)),
-      ),
-      MediaItem(
-        id: 'media_3',
-        url: 'https://picsum.photos/400/300?random=3',
-        type: MediaType.image,
-        timestamp: DateTime.now().subtract(const Duration(days: 3)),
-      ),
-    ];
-
-    return ApiResponse.success(data: mockMedia);
   }
 
   Future<ApiResponse<Map<String, dynamic>>> reactToMessage(

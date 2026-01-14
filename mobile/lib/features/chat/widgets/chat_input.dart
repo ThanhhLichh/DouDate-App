@@ -72,15 +72,9 @@ class _ChatInputState extends State<ChatInput> {
                 color: const Color(0xFF0084FF),
                 size: context.space(AppDimensions.iconM),
               ),
-              onPressed: () {
-                // TODO: Implement camera functionality
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Camera feature coming soon!'),
-                    duration: Duration(seconds: 2),
-                  ),
-                );
-              },
+              onPressed: widget.isSending
+                  ? null
+                  : () => controller.sendImageFromCamera(),
             ),
 
             // Image picker button
@@ -90,15 +84,9 @@ class _ChatInputState extends State<ChatInput> {
                 color: const Color(0xFF0084FF),
                 size: context.space(AppDimensions.iconM),
               ),
-              onPressed: () {
-                // TODO: Implement image picker
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Image picker coming soon!'),
-                    duration: Duration(seconds: 2),
-                  ),
-                );
-              },
+              onPressed: widget.isSending
+                  ? null
+                  : () => controller.sendImagesFromGallery(),
             ),
 
             // Text input
@@ -138,10 +126,7 @@ class _ChatInputState extends State<ChatInput> {
             GestureDetector(
               onTap: _hasText
                   ? _handleSend
-                  : () {
-                      // Send quick emoji as message
-                      widget.onSend(quickEmoji);
-                    },
+                  : (widget.isSending ? null : () => widget.onSend(quickEmoji)),
               child: Container(
                 width: context.space(36),
                 height: context.space(36),

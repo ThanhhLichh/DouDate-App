@@ -93,13 +93,60 @@ class MessageBubble extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Text(
-                                message.content,
-                                style: TextStyle(
-                                  color: isMe ? Colors.white : Colors.black87,
-                                  fontSize: context.sp(AppDimensions.fontS),
+                              if (message.type == MessageType.image &&
+                                  message.imgUrl != null)
+                                GestureDetector(
+                                  onTap: () => _showZoomableImage(
+                                    context,
+                                    message.imgUrl!,
+                                  ),
+                                  child: Hero(
+                                    tag: 'msg_img_${message.id}',
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(
+                                        context.space(12),
+                                      ),
+                                      child: Image.network(
+                                        message.thumbnailUrl ?? message.imgUrl!,
+                                        width: context.space(200),
+                                        fit: BoxFit.cover,
+                                        loadingBuilder:
+                                            (context, child, loadingProgress) {
+                                              if (loadingProgress == null)
+                                                return child;
+                                              return Container(
+                                                width: context.space(200),
+                                                height: context.space(150),
+                                                color: isMe
+                                                    ? Colors.white24
+                                                    : Colors.grey[300],
+                                                child: const Center(
+                                                  child:
+                                                      CircularProgressIndicator(
+                                                        strokeWidth: 2,
+                                                      ),
+                                                ),
+                                              );
+                                            },
+                                        errorBuilder:
+                                            (context, error, stackTrace) =>
+                                                const Icon(
+                                                  Icons.broken_image,
+                                                  color: Colors.grey,
+                                                ),
+                                      ),
+                                    ),
+                                  ),
+                                )
+                              else
+                                Text(
+                                  message.content,
+                                  style: TextStyle(
+                                    color: isMe ? Colors.white : Colors.black87,
+                                    fontSize: context.sp(AppDimensions.fontS),
+                                  ),
                                 ),
-                              ),
+
                               ResponsiveHelper.verticalSpace(context, 3),
                               Text(
                                 _formatTimestamp(message.timestamp),
@@ -289,6 +336,46 @@ class MessageBubble extends StatelessWidget {
             ),
             ResponsiveHelper.verticalSpace(context, AppDimensions.spaceL),
           ],
+        ),
+      ),
+    );
+  }
+
+  void _showZoomableImage(BuildContext context, String imageUrl) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => Scaffold(
+          backgroundColor: Colors.black,
+          appBar: AppBar(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            leading: IconButton(
+              icon: const Icon(Icons.close, color: Colors.white),
+              onPressed: () => Navigator.pop(context),
+            ),
+          ),
+          body: Center(
+            child: InteractiveViewer(
+              panEnabled: true,
+              minScale: 0.5,
+              maxScale: 4.0,
+              child: Hero(
+                tag: 'msg_img_${message.id}',
+                child: Image.network(
+                  imageUrl,
+                  fit: BoxFit.contain,
+                  errorBuilder: (context, error, stackTrace) => const Center(
+                    child: Icon(
+                      Icons.broken_image,
+                      color: Colors.white54,
+                      size: 64,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
         ),
       ),
     );

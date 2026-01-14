@@ -178,6 +178,38 @@ class ImageUploadService {
     }
   }
 
+  /// Pick multiple images và upload cho chat
+  Future<List<CloudinaryUploadResponse>> pickAndUploadMultipleChatImages(
+    int coupleId,
+  ) async {
+    try {
+      // 1. Pick multiple images từ gallery
+      final List<XFile> images = await _picker.pickMultiImage(imageQuality: 85);
+      if (images.isEmpty) return [];
+
+      final List<CloudinaryUploadResponse> uploadedResults = [];
+
+      // 2. Duyệt qua từng file và upload
+      for (final image in images) {
+        try {
+          final response = await _cloudinary.uploadChatImage(
+            File(image.path),
+            coupleId,
+          );
+          uploadedResults.add(response);
+        } catch (e) {
+          debugPrint('Failed to upload one of the images: $e');
+          // Tiếp tục upload các ảnh khác dù 1 ảnh lỗi
+        }
+      }
+
+      return uploadedResults;
+    } catch (e) {
+      debugPrint('Error in pickAndUploadMultipleChatImages: $e');
+      return [];
+    }
+  }
+
   /// Take photo và upload chat image
   Future<CloudinaryUploadResponse?> takePhotoAndUploadChatImage(
     int coupleId,

@@ -21,7 +21,6 @@ class _ConversationSettingsPageState extends State<ConversationSettingsPage> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<ChatController>().loadSettings();
-      context.read<ChatController>().loadMediaItems();
     });
   }
 
@@ -458,7 +457,8 @@ class _ConversationSettingsPageState extends State<ConversationSettingsPage> {
   }
 
   Widget _buildMediaSection(BuildContext context, ChatController controller) {
-    final mediaCount = controller.mediaItems.length;
+    final mediaItems = controller.mediaItems;
+    final mediaCount = mediaItems.length;
 
     return Container(
       color: Colors.white,
