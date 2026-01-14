@@ -4,10 +4,10 @@ from sqlalchemy import (
     Text,
     DateTime,
     ForeignKey,
+    Enum,
 )
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
-
 from models.base import Base
 
 
@@ -28,7 +28,15 @@ class Message(Base):
         nullable=False,
     )
 
-    content = Column(Text, nullable=False)
+    content = Column(Text, nullable=True)        # text
+    img_url = Column(Text, nullable=True)        # image original
+    thumbnail_url = Column(Text, nullable=True)  # image preview
+
+    type = Column(
+        Enum("text", "image", "system"),
+        nullable=False,
+        default="text",
+    )
 
     created_at = Column(DateTime, server_default=func.now())
 

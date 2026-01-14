@@ -190,8 +190,16 @@ async def chat_ws(
             except json.JSONDecodeError:
                 continue
 
+            msg_type = data.get("type", "text")
             content = data.get("content")
-            if not content:
+            img_url = data.get("img_url")
+            thumbnail_url = data.get("thumbnail_url")
+
+            # validate
+            if msg_type == "text" and not content:
+                continue
+
+            if msg_type == "image" and not img_url:
                 continue
 
             message = save_message(
@@ -199,6 +207,9 @@ async def chat_ws(
                 couple_id=couple_id,
                 sender_id=user_id,
                 content=content,
+                img_url=img_url,
+                thumbnail_url=thumbnail_url,
+                type=msg_type,
             )
 
             await manager.broadcast(
@@ -208,6 +219,9 @@ async def chat_ws(
                     "couple_id": couple_id,
                     "sender_id": user_id,
                     "content": message.content,
+                    "img_url": message.img_url,
+                    "thumbnail_url": message.thumbnail_url,
+                    "type": message.type,
                     "created_at": message.created_at.isoformat(),
                 },
             )
