@@ -8,6 +8,7 @@ from core.security import get_current_user_id
 from models.message import Message
 from models.couple import Couple
 from schemas.message import MessageResponse
+from sqlalchemy.orm import joinedload
 
 router = APIRouter(
     prefix="/messages",
@@ -44,6 +45,7 @@ def get_messages(
 
     messages = (
         db.query(Message)
+        .options(joinedload(Message.reactions))
         .filter(Message.couple_id == couple_id)
         .order_by(Message.created_at.asc())
         .all()

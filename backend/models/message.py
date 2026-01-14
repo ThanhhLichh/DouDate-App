@@ -6,6 +6,7 @@ from sqlalchemy import (
     ForeignKey,
 )
 from sqlalchemy.sql import func
+from sqlalchemy.orm import relationship
 
 from models.base import Base
 
@@ -30,3 +31,9 @@ class Message(Base):
     content = Column(Text, nullable=False)
 
     created_at = Column(DateTime, server_default=func.now())
+
+    reactions = relationship(
+        "MessageReaction",
+        backref="message",
+        cascade="all, delete-orphan"
+    )
