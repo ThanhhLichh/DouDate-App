@@ -11,7 +11,8 @@ import 'core/services/storage_service.dart';
 // Features
 import 'features/auth/auth_controller.dart';
 import 'features/home/home_controller.dart';
-import 'features/chat/chat_controller.dart';
+import 'features/chat/controllers/chat_controller.dart';
+import 'features/chat/controllers/conversation_controller.dart';
 import 'features/memory/memory_controller.dart';
 import 'features/profile/settings_controller.dart';
 
@@ -41,13 +42,31 @@ Future<void> main() async {
         // Home
         ChangeNotifierProvider(create: (_) => HomeController()),
 
+        // Conversation
+        ChangeNotifierProvider(create: (_) => ConversationController()),
+
         // Chat
-        ChangeNotifierProxyProvider<HomeController, ChatController>(
-          create: (context) =>
-              ChatController(homeController: context.read<HomeController>()),
-          update: (context, homeController, previousChatController) =>
-              previousChatController ??
-              ChatController(homeController: homeController),
+        ChangeNotifierProxyProvider2<
+          ConversationController,
+          HomeController,
+          ChatController
+        >(
+          create: (context) => ChatController(
+            conversationController: context.read<ConversationController>(),
+            homeController: context.read<HomeController>(),
+          ),
+          update:
+              (
+                context,
+                conversationController,
+                homeController,
+                previousChatController,
+              ) =>
+                  previousChatController ??
+                  ChatController(
+                    conversationController: conversationController,
+                    homeController: homeController,
+                  ),
         ),
 
         // Memory
@@ -95,7 +114,7 @@ class MyApp extends StatelessWidget {
             ),
           ),
 
-          // Router (có thể dùng isLoggedIn bên trong AppRouter)
+          // Router
           routerConfig: AppRouter.router,
         );
       },

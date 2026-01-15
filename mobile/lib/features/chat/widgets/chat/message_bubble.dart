@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import '../../../core/utils/responsive_helper.dart';
-import '../../../core/constants/app_dimensions.dart';
-import '../models/chat_models.dart';
-import '../chat_controller.dart';
+import '../../../../core/utils/responsive_helper.dart';
+import '../../../../core/constants/app_dimensions.dart';
+import '../../models/chat_models.dart';
+import '../../controllers/conversation_controller.dart';
+import '../../controllers/chat_controller.dart';
 
 class MessageBubble extends StatelessWidget {
   final Message message;
@@ -14,12 +15,14 @@ class MessageBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final controller = context.watch<ChatController>();
-    final settings = controller.settings;
+    final chatController = context.watch<ChatController>();
+    final conversationController = context.watch<ConversationController>();
+    final settings = conversationController.settings;
     final bubbleColor = settings?.bubbleColor ?? '#0084FF';
 
     final avatar =
-        controller.partnerAvatar ?? controller.conversation?.partnerAvatar;
+        chatController.partnerAvatar ??
+        conversationController.conversation?.partnerAvatar;
 
     final hasAvatar = avatar != null && avatar.isNotEmpty;
 
@@ -61,7 +64,7 @@ class MessageBubble extends StatelessWidget {
                 maxWidth: MediaQuery.of(context).size.width * 0.7,
               ),
               child: GestureDetector(
-                onLongPress: () => _showReactionPicker(context, controller),
+                onLongPress: () => _showReactionPicker(context, chatController),
                 child: Column(
                   crossAxisAlignment: isMe
                       ? CrossAxisAlignment.end
@@ -249,7 +252,8 @@ class MessageBubble extends StatelessWidget {
   }
 
   void _showReactionPicker(BuildContext context, ChatController controller) {
-    final quickEmoji = controller.settings?.quickEmoji ?? '❤️';
+    final conversationController = context.read<ConversationController>();
+    final quickEmoji = conversationController.settings?.quickEmoji ?? '❤️';
     final commonEmojis = ['❤️', '👍', '😂', '😮', '😢', '😡'];
 
     showModalBottomSheet(

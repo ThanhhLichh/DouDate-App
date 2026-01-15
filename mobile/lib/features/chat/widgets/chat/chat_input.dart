@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../../core/utils/responsive_helper.dart';
-import '../../../core/constants/app_dimensions.dart';
-import '../chat_controller.dart';
+import '../../../../core/utils/responsive_helper.dart';
+import '../../../../core/constants/app_dimensions.dart';
+import '../../controllers/chat_controller.dart';
+import '../../controllers/conversation_controller.dart';
 
 class ChatInput extends StatefulWidget {
   final Function(String) onSend;
@@ -44,8 +45,9 @@ class _ChatInputState extends State<ChatInput> {
 
   @override
   Widget build(BuildContext context) {
-    final controller = context.watch<ChatController>();
-    final quickEmoji = controller.settings?.quickEmoji ?? '❤️';
+    final chatController = context.watch<ChatController>();
+    final conversationController = context.watch<ConversationController>();
+    final quickEmoji = conversationController.settings?.quickEmoji ?? '❤️';
 
     return Container(
       padding: EdgeInsets.symmetric(
@@ -74,7 +76,7 @@ class _ChatInputState extends State<ChatInput> {
               ),
               onPressed: widget.isSending
                   ? null
-                  : () => controller.sendImageFromCamera(),
+                  : () => chatController.sendImageFromCamera(),
             ),
 
             // Image picker button
@@ -86,7 +88,7 @@ class _ChatInputState extends State<ChatInput> {
               ),
               onPressed: widget.isSending
                   ? null
-                  : () => controller.sendImagesFromGallery(),
+                  : () => chatController.sendImagesFromGallery(),
             ),
 
             // Text input

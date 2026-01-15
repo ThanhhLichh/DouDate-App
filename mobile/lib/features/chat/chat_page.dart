@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'chat_controller.dart';
-import 'widgets/chat_app_bar.dart';
-import 'widgets/message_bubble.dart';
-import 'widgets/chat_input.dart';
-import '../../core/utils/responsive_helper.dart';
-import '../../core/constants/app_dimensions.dart';
+import 'controllers/chat_controller.dart';
+import 'controllers/conversation_controller.dart';
+import 'widgets/chat/chat_app_bar.dart';
+import 'widgets/chat/chat_input.dart';
+import 'widgets/chat/message_list.dart';
+import 'widgets/chat/chat_state_views.dart';
 import 'models/conversation_settings_models.dart';
 
 class ChatPage extends StatefulWidget {
@@ -22,15 +22,17 @@ class _ChatPageState extends State<ChatPage> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final controller = context.read<ChatController>();
-      if (controller.conversation == null) {
-        controller.initializeConversation().then((_) {
-          if (controller.conversation != null) {
-            controller.fetchMessages();
+      final chatController = context.read<ChatController>();
+      final conversationController = context.read<ConversationController>();
+
+      if (conversationController.conversation == null) {
+        chatController.initialize().then((_) {
+          if (conversationController.conversation != null) {
+            chatController.fetchMessages();
           }
         });
       } else {
-        controller.fetchMessages();
+        chatController.fetchMessages();
       }
     });
   }
@@ -48,117 +50,71 @@ class _ChatPageState extends State<ChatPage> {
     if (success) {
       if (_scrollController.hasClients) {
         _scrollController.animateTo(
-          0, // Scroll về đầu list (bottom của chat)
+          0,
           duration: const Duration(milliseconds: 300),
           curve: Curves.easeOut,
         );
       }
-    } else {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(controller.errorMessage ?? 'Failed to send message'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
+    } else if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(controller.errorMessage ?? 'Failed to send message'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
-  }
-
-  Future<void> _handleRefresh() async {
-    await context.read<ChatController>().refreshMessages();
   }
 
   @override
   Widget build(BuildContext context) {
-    final controller = context.watch<ChatController>();
+    final chatController = context.watch<ChatController>();
+    final conversationController = context.watch<ConversationController>();
 
-    // Loading initial conversation
-    if (controller.isLoading && controller.conversation == null) {
+    // 1. Initial Loading
+    if (conversationController.isLoading &&
+        conversationController.conversation == null) {
       return Scaffold(
         backgroundColor: Colors.white,
-        appBar: AppBar(
-          backgroundColor: Colors.white,
-          elevation: 1,
-          title: const Text('Chat'),
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back),
-            onPressed: () => Navigator.of(context).pop(),
-          ),
+        appBar: PreferredSize(
+          preferredSize: const Size.fromHeight(56),
+          child: AppBar(title: const Text('Chat')),
         ),
-        body: const Center(
-          child: CircularProgressIndicator(
-            valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF0084FF)),
-          ),
+        body: const ChatLoadingView(),
+      );
+    }
+
+    // 2. Conversation Error
+    if (conversationController.conversation == null) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Chat')),
+        body: ChatErrorView(
+          message:
+              conversationController.errorMessage ??
+              'Failed to load conversation',
+          onRetry: () => chatController.initialize().then((_) {
+            if (conversationController.conversation != null) {
+              chatController.fetchMessages();
+            }
+          }),
         ),
       );
     }
 
-    // Error loading conversation
-    if (controller.conversation == null) {
-      return Scaffold(
-        backgroundColor: Colors.white,
-        appBar: AppBar(
-          backgroundColor: Colors.white,
-          elevation: 1,
-          title: const Text('Chat'),
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back),
-            onPressed: () => Navigator.of(context).pop(),
-          ),
-        ),
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.error_outline,
-                size: context.space(AppDimensions.iconXL),
-                color: Colors.red,
-              ),
-              ResponsiveHelper.verticalSpace(context, AppDimensions.spaceM),
-              Text(
-                controller.errorMessage ?? 'Failed to load conversation',
-                style: TextStyle(
-                  fontSize: context.sp(AppDimensions.fontM),
-                  color: Colors.grey[600],
-                ),
-              ),
-              ResponsiveHelper.verticalSpace(context, AppDimensions.spaceL),
-              ElevatedButton(
-                onPressed: () {
-                  controller.initializeConversation().then((_) {
-                    if (controller.conversation != null) {
-                      controller.fetchMessages();
-                    }
-                  });
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF0084FF),
-                ),
-                child: const Text('Retry'),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    // Get background theme
     final backgroundTheme =
-        controller.settings?.backgroundTheme ?? BackgroundTheme.defaultTheme;
+        conversationController.settings?.backgroundTheme ??
+        BackgroundTheme.defaultTheme;
 
     return Scaffold(
       backgroundColor: Colors.transparent,
-      appBar: ChatAppBar(conversation: controller.conversation!),
+      appBar: ChatAppBar(conversation: conversationController.conversation!),
       body: Container(
         decoration: backgroundTheme.decoration,
         child: Column(
           children: [
-            Expanded(child: _buildMessageList(context, controller)),
+            Expanded(child: _buildBodyContent(chatController)),
             ChatInput(
               onSend: _handleSendMessage,
-              isSending: controller.isSending,
+              isSending: chatController.isSending,
             ),
           ],
         ),
@@ -166,160 +122,22 @@ class _ChatPageState extends State<ChatPage> {
     );
   }
 
-  Widget _buildMessageList(BuildContext context, ChatController controller) {
+  Widget _buildBodyContent(ChatController controller) {
     if (controller.isLoading && controller.messages.isEmpty) {
-      return const Center(
-        child: CircularProgressIndicator(
-          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF0084FF)),
-        ),
-      );
+      return const ChatLoadingView();
     }
-
     if (controller.errorMessage != null && controller.messages.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.error_outline,
-              size: context.space(AppDimensions.iconXL),
-              color: Colors.red,
-            ),
-            ResponsiveHelper.verticalSpace(context, AppDimensions.spaceM),
-            Text(
-              controller.errorMessage!,
-              style: TextStyle(
-                fontSize: context.sp(AppDimensions.fontM),
-                color: Colors.grey[600],
-              ),
-              textAlign: TextAlign.center,
-            ),
-            ResponsiveHelper.verticalSpace(context, AppDimensions.spaceL),
-            ElevatedButton(
-              onPressed: () => controller.fetchMessages(),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF0084FF),
-              ),
-              child: const Text('Retry'),
-            ),
-          ],
-        ),
+      return ChatErrorView(
+        message: controller.errorMessage!,
+        onRetry: () => controller.fetchMessages(),
       );
     }
+    if (controller.messages.isEmpty) return const ChatEmptyView();
 
-    if (controller.messages.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.chat_bubble_outline,
-              size: context.space(AppDimensions.iconXL),
-              color: Colors.grey[400],
-            ),
-            ResponsiveHelper.verticalSpace(context, AppDimensions.spaceM),
-            Text(
-              'No messages yet',
-              style: TextStyle(
-                fontSize: context.sp(AppDimensions.fontL),
-                color: Colors.grey[600],
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            ResponsiveHelper.verticalSpace(context, AppDimensions.spaceS),
-            Text(
-              'Say hi to your partner! 💕',
-              style: TextStyle(
-                fontSize: context.sp(AppDimensions.fontS),
-                color: Colors.grey[500],
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    return RefreshIndicator(
-      onRefresh: _handleRefresh,
-      color: const Color(0xFF0084FF),
-      child: ListView.builder(
-        controller: _scrollController,
-        reverse: true,
-        padding: EdgeInsets.symmetric(
-          vertical: context.space(AppDimensions.spaceM),
-        ),
-        itemCount: controller.messages.length,
-        itemBuilder: (context, index) {
-          final reversedIndex = controller.messages.length - 1 - index;
-          final message = controller.messages[reversedIndex];
-
-          final isMe =
-              controller.currentUserId != null &&
-              message.senderId.toString() ==
-                  controller.currentUserId.toString();
-
-          final showDateSeparator =
-              reversedIndex ==
-                  controller.messages.length - 1 || // Tin nhắn đầu tiên
-              !_isSameDay(
-                controller.messages[reversedIndex + 1].timestamp,
-                message.timestamp,
-              );
-
-          return Column(
-            children: [
-              MessageBubble(message: message, isMe: isMe),
-              if (showDateSeparator)
-                _buildDateSeparator(context, message.timestamp),
-            ],
-          );
-        },
-      ),
+    return MessageList(
+      controller: controller,
+      scrollController: _scrollController,
+      onRefresh: () => controller.refreshMessages(),
     );
-  }
-
-  Widget _buildDateSeparator(BuildContext context, DateTime date) {
-    String label;
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final messageDate = DateTime(date.year, date.month, date.day);
-
-    if (messageDate == today) {
-      label = 'Today';
-    } else if (messageDate == today.subtract(const Duration(days: 1))) {
-      label = 'Yesterday';
-    } else {
-      label = '${date.day}/${date.month}/${date.year}';
-    }
-
-    return Padding(
-      padding: EdgeInsets.symmetric(
-        vertical: context.space(AppDimensions.spaceM),
-      ),
-      child: Container(
-        padding: EdgeInsets.symmetric(
-          horizontal: context.space(12),
-          vertical: context.space(6),
-        ),
-        decoration: BoxDecoration(
-          color: Colors.black.withOpacity(0.4),
-          borderRadius: BorderRadius.circular(context.space(12)),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: context.sp(AppDimensions.fontXXS),
-            color: Colors.white,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ),
-    );
-  }
-
-  bool _isSameDay(DateTime date1, DateTime date2) {
-    return date1.year == date2.year &&
-        date1.month == date2.month &&
-        date1.day == date2.day;
   }
 }

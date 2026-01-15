@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../../core/utils/responsive_helper.dart';
-import '../../../core/constants/app_dimensions.dart';
-import '../../../core/theme/theme_constants.dart';
-import '../models/chat_models.dart';
-import '../conversation_settings_page.dart';
-import '../chat_controller.dart';
+import '../../../../core/utils/responsive_helper.dart';
+import '../../../../core/constants/app_dimensions.dart';
+import '../../../../core/theme/theme_constants.dart';
+import '../../models/chat_models.dart';
+import '../../conversation_settings_page.dart';
+import '../../controllers/chat_controller.dart';
+import '../../controllers/conversation_controller.dart';
 
 class ChatAppBar extends StatelessWidget implements PreferredSizeWidget {
   final Conversation conversation;
@@ -26,15 +27,16 @@ class ChatAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
-    final controller = context.watch<ChatController>();
-    final settings = controller.settings;
+    final conversationController = context.watch<ConversationController>();
+    final chatController = context.watch<ChatController>();
+    final settings = conversationController.settings;
 
     final displayName =
         settings?.partnerNickname ??
-        controller.partnerName ??
+        chatController.partnerName ??
         conversation.partnerName;
 
-    final avatar = controller.partnerAvatar ?? conversation.partnerAvatar;
+    final avatar = chatController.partnerAvatar ?? conversation.partnerAvatar;
 
     return AppBar(
       backgroundColor: Colors.white,
