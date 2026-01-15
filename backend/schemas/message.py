@@ -13,8 +13,17 @@ class MessageResponse(BaseModel):
     thumbnail_url: Optional[str]
     type: Literal["text", "image", "system"]
     created_at: datetime
+
+    is_read: bool
+    read_at: Optional[datetime]
+    
     reactions: List[ReactionResponse] = []
 
     model_config = {
         "from_attributes": True
     }
+
+
+class MarkReadRequest(BaseModel):
+    couple_id: int
+    last_message_id: int

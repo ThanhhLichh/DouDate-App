@@ -9,6 +9,7 @@ from sqlalchemy import (
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 from models.base import Base
+from sqlalchemy import Boolean
 
 
 class Message(Base):
@@ -45,3 +46,5 @@ class Message(Base):
         backref="message",
         cascade="all, delete-orphan"
     )
+    is_read = Column(Boolean, default=False)
+    read_at = Column(DateTime, nullable=True)

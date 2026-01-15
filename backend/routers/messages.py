@@ -9,6 +9,10 @@ from models.message import Message
 from models.couple import Couple
 from schemas.message import MessageResponse
 from sqlalchemy.orm import joinedload
+from datetime import datetime
+from schemas.message import MarkReadRequest
+from routers.chat import manager
+
 
 router = APIRouter(
     prefix="/messages",
@@ -53,3 +57,41 @@ def get_messages(
 
     return messages
 
+@router.post("/read")
+async def mark_messages_read(
+    data: MarkReadRequest,
+    db: Session = Depends(get_db),
+    user_id: int = Depends(get_current_user_id),
+):
+    now = datetime.utcnow()
+
+    db.query(Message).filter(
+        Message.couple_id == data.couple_id,
+        Message.sender_id != user_id,
+        Message.id <= data.last_message_id,
+        Message.is_read == False,
+    ).update(
+        {
+            "is_read": True,
+            "read_at": now,
+        },
+        synchronize_session=False,
+    )
+
+    db.commit()
+
+    # 🔥 BẮN REALTIME CHO NGƯỜI GỬI
+    await manager.broadcast(
+        data.couple_id,
+        {
+            "type": "read",
+            "user_id": user_id,                # người vừa đọc
+            "last_message_id": data.last_message_id,
+            "read_at": now.isoformat(),
+        }
+    )
+
+    return {
+        "status": "ok",
+        "read_at": now.isoformat(),
+    }
