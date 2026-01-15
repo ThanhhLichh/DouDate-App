@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../../core/utils/responsive_helper.dart';
 import '../../../../core/constants/app_dimensions.dart';
-import '../../controllers/conversation_controller.dart';
+import '../../controllers/chat_controller.dart';
 import '../../models/conversation_settings_models.dart';
 
 class MediaGalleryPage extends StatelessWidget {
@@ -10,7 +10,7 @@ class MediaGalleryPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final controller = context.watch<ConversationController>();
+    final controller = context.watch<ChatController>();
     final mediaItems = controller.mediaItems;
 
     return Scaffold(

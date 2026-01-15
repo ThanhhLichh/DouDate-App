@@ -181,7 +181,7 @@ class ChatController extends ChangeNotifier {
 
         await _requestPresenceState();
 
-        debugPrint('✅ WebSocket connected, settings listener is active');
+        debugPrint('WebSocket connected, settings listener is active');
       }
     } catch (e) {
       debugPrint('Failed to connect WebSocket: $e');
