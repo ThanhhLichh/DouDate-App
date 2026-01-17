@@ -41,6 +41,9 @@ class ChatWebSocketService extends BaseWebSocketManager {
   final _settingsUpdateController = StreamController<void>.broadcast();
   final _reactionController = StreamController<MessageReaction>.broadcast();
   final _readReceiptController = StreamController<ReadReceiptEvent>.broadcast();
+  final _messageUpdatedController =
+      StreamController<Map<String, dynamic>>.broadcast();
+  final _messageDeletedController = StreamController<int>.broadcast();
 
   Stream<Message> get messageStream => _messageController.stream;
   Stream<PresenceEvent> get presenceStream => _presenceController.stream;
@@ -48,6 +51,9 @@ class ChatWebSocketService extends BaseWebSocketManager {
   Stream<MessageReaction> get reactionStream => _reactionController.stream;
   Stream<ReadReceiptEvent> get readReceiptStream =>
       _readReceiptController.stream;
+  Stream<Map<String, dynamic>> get messageUpdatedStream =>
+      _messageUpdatedController.stream;
+  Stream<int> get messageDeletedStream => _messageDeletedController.stream;
 
   @override
   String getWebSocketUrl(dynamic params) {
@@ -86,6 +92,16 @@ class ChatWebSocketService extends BaseWebSocketManager {
         print(
           'Read receipt: User ${receipt.userId} read up to ${receipt.lastMessageId}',
         );
+      } else if (type == 'message_updated') {
+        _messageUpdatedController.add({
+          'message_id': json['message_id'],
+          'content': json['content'],
+          'edited_at': json['edited_at'],
+        });
+        print('Message ${json['message_id']} updated');
+      } else if (type == 'message_deleted') {
+        _messageDeletedController.add(json['message_id'] as int);
+        print('Message ${json['message_id']} deleted');
       } else if (type == 'ping') {
         // Ignore ping messages
         return;
@@ -126,6 +142,9 @@ class ChatWebSocketService extends BaseWebSocketManager {
     _presenceController.close();
     _settingsUpdateController.close();
     _readReceiptController.close();
+    _reactionController.close();
+    _messageUpdatedController.close();
+    _messageDeletedController.close();
     super.dispose();
   }
 }

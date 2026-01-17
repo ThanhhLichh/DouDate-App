@@ -18,6 +18,8 @@ class Message {
   final String? senderAvatar;
   final bool isRead;
   final DateTime? readAt;
+  final DateTime? editedAt;
+  final bool isDeleted;
 
   Message({
     required this.id,
@@ -33,6 +35,8 @@ class Message {
     this.isRead = true,
     this.reactionsByUserId,
     this.readAt,
+    this.editedAt,
+    this.isDeleted = false,
   });
 
   factory Message.fromJson(Map<String, dynamic> json) {
@@ -55,6 +59,10 @@ class Message {
             }
           : null,
       readAt: json['read_at'] != null ? DateTime.parse(json['read_at']) : null,
+      editedAt: json['edited_at'] != null
+          ? DateTime.parse(json['edited_at'])
+          : null,
+      isDeleted: json['is_deleted'] ?? false,
     );
   }
 
@@ -82,6 +90,8 @@ class Message {
     String? senderAvatar,
     bool? isRead,
     DateTime? readAt,
+    DateTime? editedAt,
+    bool? isDeleted,
   }) {
     return Message(
       id: id ?? this.id,
@@ -97,10 +107,21 @@ class Message {
       senderAvatar: senderAvatar ?? this.senderAvatar,
       isRead: isRead ?? this.isRead,
       readAt: readAt ?? this.readAt,
+      editedAt: editedAt ?? this.editedAt,
+      isDeleted: isDeleted ?? this.isDeleted,
     );
   }
 
   // --- Helpers ---
+  bool canEditOrDelete(int currentUserId) {
+    if (senderId != currentUserId || isDeleted) return false;
+    if (type != MessageType.text) return false;
+
+    final now = DateTime.now();
+    final difference = now.difference(createdAt);
+    return difference.inMinutes < 10;
+  }
+
   String get conversationId => coupleId.toString();
   DateTime get timestamp => createdAt;
   List<String> get reactions => reactionsByUserId?.values.toList() ?? [];

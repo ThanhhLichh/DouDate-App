@@ -34,6 +34,8 @@ class ApiConfig {
 
   // Chat/Message Endpoints
   static const String getMessages = '/messages';
+  static String updateMessage(int messageId) => '/messages/$messageId';
+  static String deleteMessage(int messageId) => '/messages/$messageId';
   // static const String reactToMessage = '/messages';
   static String reactToMessage(int messageId) =>
       '/messages/$messageId/reaction';

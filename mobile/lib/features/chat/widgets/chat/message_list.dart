@@ -4,7 +4,7 @@ import '../../../../core/utils/responsive_helper.dart';
 import '../../../../core/constants/app_dimensions.dart';
 import '../../controllers/chat_controller.dart';
 
-class MessageList extends StatelessWidget {
+class MessageList extends StatefulWidget {
   final ChatController controller;
   final ScrollController scrollController;
   final Future<void> Function() onRefresh;
@@ -17,36 +17,83 @@ class MessageList extends StatelessWidget {
   });
 
   @override
+  State<MessageList> createState() => _MessageListState();
+}
+
+class _MessageListState extends State<MessageList> {
+  @override
+  void initState() {
+    super.initState();
+    widget.scrollController.addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    widget.scrollController.removeListener(_onScroll);
+    super.dispose();
+  }
+
+  void _onScroll() {
+    // Khi scroll gần đến cuối danh sách (90% chiều cao tối đa)
+    if (widget.scrollController.position.pixels >=
+        widget.scrollController.position.maxScrollExtent * 0.9) {
+      if (widget.controller.hasMoreMessages &&
+          !widget.controller.isLoadingMore) {
+        widget.controller.loadMoreMessages();
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return RefreshIndicator(
-      onRefresh: onRefresh,
+      onRefresh: widget.onRefresh,
       color: const Color(0xFF0084FF),
       child: ListView.builder(
-        controller: scrollController,
+        controller: widget.scrollController,
         reverse: true,
         padding: EdgeInsets.symmetric(
           vertical: context.space(AppDimensions.spaceM),
         ),
-        itemCount: controller.messages.length,
+        itemCount:
+            widget.controller.messages.length +
+            (widget.controller.hasMoreMessages ? 1 : 0),
         itemBuilder: (context, index) {
-          final reversedIndex = controller.messages.length - 1 - index;
-          final message = controller.messages[reversedIndex];
+          // Loading indicator ở cuối
+          if (index == widget.controller.messages.length) {
+            return Padding(
+              padding: EdgeInsets.all(context.space(16)),
+              child: const Center(
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF0084FF)),
+                ),
+              ),
+            );
+          }
+
+          final reversedIndex = widget.controller.messages.length - 1 - index;
+          final message = widget.controller.messages[reversedIndex];
 
           final isMe =
-              controller.currentUserId != null &&
+              widget.controller.currentUserId != null &&
               message.senderId.toString() ==
-                  controller.currentUserId.toString();
+                  widget.controller.currentUserId.toString();
 
           final showDateSeparator =
-              reversedIndex == controller.messages.length - 1 ||
+              reversedIndex == widget.controller.messages.length - 1 ||
               !_isSameDay(
-                controller.messages[reversedIndex + 1].timestamp,
+                widget.controller.messages[reversedIndex + 1].timestamp,
                 message.timestamp,
               );
 
           return Column(
             children: [
-              MessageBubble(message: message, isMe: isMe),
+              MessageBubble(
+                message: message,
+                isMe: isMe,
+                controller: widget.controller,
+              ),
               if (showDateSeparator)
                 _buildDateSeparator(context, message.timestamp),
             ],

@@ -24,6 +24,8 @@ class ChatController extends ChangeNotifier {
   String? _errorMessage;
   int? _currentUserId;
   int? _partnerId;
+  bool _hasMoreMessages = true;
+  bool _isLoadingMore = false;
 
   List<Message> get messages => _messages;
   List<MediaItem> get mediaItems {
@@ -50,10 +52,14 @@ class ChatController extends ChangeNotifier {
   bool get isConnected => _chatSocketService.isConnected;
   int? get currentUserId => _currentUserId;
   int? get partnerId => _partnerId;
+  bool get hasMoreMessages => _hasMoreMessages;
+  bool get isLoadingMore => _isLoadingMore;
 
   StreamSubscription? _presenceSubscription;
   StreamSubscription? _reactionSubscription;
   StreamSubscription? _readReceiptSubscription;
+  StreamSubscription? _messageUpdatedSubscription;
+  StreamSubscription? _messageDeletedSubscription;
 
   String? get partnerAvatar => homeController?.dashboardData?.partnerAvatar;
   String? get partnerName => homeController?.dashboardData?.partnerName;
@@ -70,6 +76,8 @@ class ChatController extends ChangeNotifier {
     _listenToPresence();
     _listenToReactions();
     _listenToReadReceipts();
+    _listenToMessageUpdates();
+    _listenToMessageDeletes();
 
     conversationController.setWebSocketService(_chatSocketService);
   }
@@ -88,6 +96,10 @@ class ChatController extends ChangeNotifier {
       _partnerId = id;
       notifyListeners();
     }
+  }
+
+  Future<void> loadMoreMessages() async {
+    await fetchMessages(loadMore: true);
   }
 
   void _listenToWebSocket() {
@@ -185,6 +197,40 @@ class ChatController extends ChangeNotifier {
     });
   }
 
+  void _listenToMessageUpdates() {
+    _messageUpdatedSubscription = _chatSocketService.messageUpdatedStream
+        .listen((data) {
+          final messageId = data['message_id'] as int;
+          final content = data['content'] as String;
+          final editedAt = DateTime.parse(data['edited_at'] as String);
+
+          final messageIndex = _messages.indexWhere((m) => m.id == messageId);
+          if (messageIndex != -1) {
+            _messages[messageIndex] = _messages[messageIndex].copyWith(
+              content: content,
+              editedAt: editedAt,
+            );
+            notifyListeners();
+            debugPrint('Message $messageId updated');
+          }
+        });
+  }
+
+  void _listenToMessageDeletes() {
+    _messageDeletedSubscription = _chatSocketService.messageDeletedStream
+        .listen((messageId) {
+          final messageIndex = _messages.indexWhere((m) => m.id == messageId);
+          if (messageIndex != -1) {
+            _messages[messageIndex] = _messages[messageIndex].copyWith(
+              isDeleted: true,
+              content: 'This message has been deleted',
+            );
+            notifyListeners();
+            debugPrint('Message $messageId deleted');
+          }
+        });
+  }
+
   Future<void> _requestPresenceState() async {
     if (conversationController.conversation == null) return;
     debugPrint('Waiting for presence state from server...');
@@ -220,22 +266,38 @@ class ChatController extends ChangeNotifier {
     }
   }
 
-  Future<void> fetchMessages() async {
+  Future<void> fetchMessages({bool loadMore = false}) async {
     if (conversationController.conversation == null) {
       await initialize();
       if (conversationController.conversation == null) return;
     }
 
-    _isLoading = true;
+    if (loadMore) {
+      if (!_hasMoreMessages || _isLoadingMore) return;
+      _isLoadingMore = true;
+    } else {
+      _isLoading = true;
+      _messages.clear();
+      _hasMoreMessages = true;
+    }
+
     _errorMessage = null;
     notifyListeners();
 
     try {
       final conversation = conversationController.conversation!;
-      final response = await _repository.getMessages(conversation.coupleId);
+      final beforeId = loadMore && _messages.isNotEmpty
+          ? _messages.first.id
+          : null;
+
+      final response = await _repository.getMessagesPaginated(
+        coupleId: conversation.coupleId,
+        limit: 20,
+        beforeId: beforeId,
+      );
 
       if (response.success && response.data != null) {
-        _messages = response.data!.map((msg) {
+        final newMessages = response.data!.map((msg) {
           final isMe = msg.senderId == _currentUserId;
           return msg.copyWith(
             senderName: isMe
@@ -247,15 +309,25 @@ class ChatController extends ChangeNotifier {
           );
         }).toList();
 
+        if (loadMore) {
+          _messages.insertAll(0, newMessages);
+        } else {
+          _messages = newMessages;
+        }
+
+        // Nếu số message nhận được ít hơn limit -> không còn message nào
+        if (newMessages.length < 20) {
+          _hasMoreMessages = false;
+        }
+
         _errorMessage = null;
         notifyListeners();
 
-        // CHỈ mark as read nếu screen visible
-        if (_isScreenVisible) {
+        if (_isScreenVisible && !loadMore) {
           await markMessagesAsRead();
         }
 
-        if (_messages.isNotEmpty) {
+        if (_messages.isNotEmpty && !loadMore) {
           conversationController.updateLastMessage(_messages.last);
         }
       } else {
@@ -264,7 +336,11 @@ class ChatController extends ChangeNotifier {
     } catch (e) {
       _errorMessage = 'An error occurred. Please try again.';
     } finally {
-      _isLoading = false;
+      if (loadMore) {
+        _isLoadingMore = false;
+      } else {
+        _isLoading = false;
+      }
       notifyListeners();
     }
   }
@@ -365,6 +441,71 @@ class ChatController extends ChangeNotifier {
     } finally {
       _isSending = false;
       notifyListeners();
+    }
+  }
+
+  Future<bool> updateMessage(int messageId, String newContent) async {
+    if (newContent.trim().isEmpty) return false;
+
+    try {
+      // Optimistic update
+      final messageIndex = _messages.indexWhere((m) => m.id == messageId);
+      if (messageIndex == -1) return false;
+
+      final oldMessage = _messages[messageIndex];
+      _messages[messageIndex] = oldMessage.copyWith(
+        content: newContent.trim(),
+        editedAt: DateTime.now(),
+      );
+      notifyListeners();
+
+      final response = await _repository.updateMessage(
+        messageId: messageId,
+        content: newContent.trim(),
+      );
+
+      if (!response.success) {
+        // Rollback on failure
+        _messages[messageIndex] = oldMessage;
+        notifyListeners();
+        _errorMessage = response.message ?? 'Failed to update message';
+        return false;
+      }
+
+      return true;
+    } catch (e) {
+      _errorMessage = 'Failed to update message: $e';
+      return false;
+    }
+  }
+
+  Future<bool> deleteMessage(int messageId) async {
+    try {
+      // Optimistic update
+      final messageIndex = _messages.indexWhere((m) => m.id == messageId);
+      if (messageIndex == -1) return false;
+
+      final oldMessage = _messages[messageIndex];
+      _messages[messageIndex] = oldMessage.copyWith(
+        isDeleted: true,
+        content: 'This message has been deleted',
+      );
+      notifyListeners();
+
+      final response = await _repository.deleteMessage(messageId: messageId);
+
+      if (!response.success) {
+        // Rollback on failure
+        _messages[messageIndex] = oldMessage;
+        notifyListeners();
+        _errorMessage = response.message ?? 'Failed to delete message';
+        return false;
+      }
+
+      return true;
+    } catch (e) {
+      _errorMessage = 'Failed to delete message: $e';
+      return false;
     }
   }
 
@@ -551,10 +692,12 @@ class ChatController extends ChangeNotifier {
 
   @override
   void dispose() {
-    debugPrint('🗑️ ChatController: DISPOSING');
+    debugPrint('ChatController: DISPOSING');
     _presenceSubscription?.cancel();
     _reactionSubscription?.cancel();
     _readReceiptSubscription?.cancel();
+    _messageUpdatedSubscription?.cancel();
+    _messageDeletedSubscription?.cancel();
     _chatSocketService.dispose();
     super.dispose();
   }

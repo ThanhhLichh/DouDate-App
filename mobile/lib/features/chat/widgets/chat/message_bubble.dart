@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter/services.dart';
 import '../../../../core/utils/responsive_helper.dart';
 import '../../../../core/constants/app_dimensions.dart';
 import '../../models/chat_models.dart';
@@ -10,8 +11,14 @@ import '../../controllers/chat_controller.dart';
 class MessageBubble extends StatelessWidget {
   final Message message;
   final bool isMe;
+  final ChatController controller;
 
-  const MessageBubble({super.key, required this.message, required this.isMe});
+  const MessageBubble({
+    super.key,
+    required this.message,
+    required this.isMe,
+    required this.controller,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -64,7 +71,7 @@ class MessageBubble extends StatelessWidget {
                 maxWidth: MediaQuery.of(context).size.width * 0.7,
               ),
               child: GestureDetector(
-                onLongPress: () => _showReactionPicker(context, chatController),
+                onLongPress: () => _showMessageOptions(context, chatController),
                 child: Column(
                   crossAxisAlignment: isMe
                       ? CrossAxisAlignment.end
@@ -143,12 +150,43 @@ class MessageBubble extends StatelessWidget {
                                   ),
                                 )
                               else
-                                Text(
-                                  message.content,
-                                  style: TextStyle(
-                                    color: isMe ? Colors.white : Colors.black87,
-                                    fontSize: context.sp(AppDimensions.fontS),
-                                  ),
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    if (message.editedAt != null &&
+                                        !message.isDeleted)
+                                      Padding(
+                                        padding: EdgeInsets.only(
+                                          top: context.space(4),
+                                        ),
+                                        child: Text(
+                                          'edited',
+                                          style: TextStyle(
+                                            color: isMe
+                                                ? Colors.white60
+                                                : Colors.grey[500],
+                                            fontSize: context.sp(9),
+                                            fontStyle: FontStyle.italic,
+                                          ),
+                                        ),
+                                      ),
+                                    Text(
+                                      message.isDeleted
+                                          ? 'This message has been deleted'
+                                          : message.content,
+                                      style: TextStyle(
+                                        color: isMe
+                                            ? Colors.white
+                                            : Colors.black87,
+                                        fontSize: context.sp(
+                                          AppDimensions.fontS,
+                                        ),
+                                        fontStyle: message.isDeleted
+                                            ? FontStyle.italic
+                                            : FontStyle.normal,
+                                      ),
+                                    ),
+                                  ],
                                 ),
 
                               ResponsiveHelper.verticalSpace(context, 3),
@@ -280,10 +318,16 @@ class MessageBubble extends StatelessWidget {
     }
   }
 
-  void _showReactionPicker(BuildContext context, ChatController controller) {
+  void _showMessageOptions(
+    BuildContext context,
+    ChatController chatController,
+  ) {
     final conversationController = context.read<ConversationController>();
     final quickEmoji = conversationController.settings?.quickEmoji ?? '❤️';
     final commonEmojis = ['❤️', '👍', '😂', '😮', '😢', '😡'];
+
+    final canEdit =
+        isMe && message.canEditOrDelete(controller.currentUserId ?? 0);
 
     showModalBottomSheet(
       context: context,
@@ -312,7 +356,7 @@ class MessageBubble extends StatelessWidget {
                 children: [
                   GestureDetector(
                     onTap: () {
-                      controller.reactToMessage(message.id, quickEmoji);
+                      chatController.reactToMessage(message.id, quickEmoji);
                       Navigator.pop(context);
                     },
                     child: Container(
@@ -323,7 +367,7 @@ class MessageBubble extends StatelessWidget {
                       ),
                       child: Text(
                         quickEmoji,
-                        style: TextStyle(fontSize: context.sp(32)),
+                        style: TextStyle(fontSize: context.sp(16)),
                       ),
                     ),
                   ),
@@ -334,7 +378,7 @@ class MessageBubble extends StatelessWidget {
                   Text(
                     'Quick Reaction',
                     style: TextStyle(
-                      fontSize: context.sp(AppDimensions.fontS),
+                      fontSize: context.sp(AppDimensions.fontXS),
                       color: Colors.grey[700],
                     ),
                   ),
@@ -342,6 +386,7 @@ class MessageBubble extends StatelessWidget {
               ),
             ),
             ResponsiveHelper.verticalSpace(context, AppDimensions.spaceL),
+
             // All reactions
             Wrap(
               spacing: context.space(16),
@@ -350,26 +395,169 @@ class MessageBubble extends StatelessWidget {
               children: commonEmojis.map((emoji) {
                 return GestureDetector(
                   onTap: () {
-                    controller.reactToMessage(message.id, emoji);
+                    chatController.reactToMessage(message.id, emoji);
                     Navigator.pop(context);
                   },
                   child: Container(
-                    padding: EdgeInsets.all(context.space(12)),
+                    padding: EdgeInsets.all(context.space(8)),
                     decoration: BoxDecoration(
                       color: Colors.grey[100],
                       shape: BoxShape.circle,
                     ),
                     child: Text(
                       emoji,
-                      style: TextStyle(fontSize: context.sp(28)),
+                      style: TextStyle(fontSize: context.sp(16)),
                     ),
                   ),
                 );
               }).toList(),
             ),
-            ResponsiveHelper.verticalSpace(context, AppDimensions.spaceL),
+
+            // Edit/Delete/Copy options (icon buttons nằm ngang)
+            if (canEdit || !message.isDeleted) ...[
+              ResponsiveHelper.verticalSpace(context, AppDimensions.spaceL),
+              Divider(color: Colors.grey[300]),
+              ResponsiveHelper.verticalSpace(context, AppDimensions.spaceS),
+
+              // Icon buttons row
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  // Copy button
+                  if (!message.isDeleted)
+                    _buildIconButton(
+                      context: context,
+                      icon: Icons.copy,
+                      label: 'Copy',
+                      color: Colors.grey[700]!,
+                      onTap: () {
+                        Navigator.pop(context);
+                        _copyToClipboard(context);
+                      },
+                    ),
+
+                  // Edit button (chỉ hiện nếu có thể edit)
+                  if (canEdit)
+                    _buildIconButton(
+                      context: context,
+                      icon: Icons.edit,
+                      label: 'Edit',
+                      color: const Color(0xFF0084FF),
+                      onTap: () {
+                        Navigator.pop(context);
+                        _showEditDialog(context);
+                      },
+                    ),
+
+                  // Delete button (chỉ hiện nếu có thể delete)
+                  if (canEdit)
+                    _buildIconButton(
+                      context: context,
+                      icon: Icons.delete,
+                      label: 'Delete',
+                      color: Colors.red,
+                      onTap: () {
+                        Navigator.pop(context);
+                        _showDeleteConfirmation(context);
+                      },
+                    ),
+                ],
+              ),
+            ],
+
+            ResponsiveHelper.verticalSpace(context, AppDimensions.spaceM),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showEditDialog(BuildContext context) {
+    final textController = TextEditingController(text: message.content);
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Edit Message'),
+        content: TextField(
+          controller: textController,
+          maxLines: 3,
+          autofocus: true,
+          decoration: const InputDecoration(
+            hintText: 'Enter new message',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () async {
+              final newContent = textController.text.trim();
+              if (newContent.isEmpty || newContent == message.content) {
+                Navigator.pop(context);
+                return;
+              }
+
+              final success = await controller.updateMessage(
+                message.id,
+                newContent,
+              );
+              if (context.mounted) {
+                Navigator.pop(context);
+                if (!success) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        controller.errorMessage ?? 'Failed to edit message',
+                      ),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              }
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDeleteConfirmation(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Message'),
+        content: const Text('Are you sure you want to delete this message?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () async {
+              final success = await controller.deleteMessage(message.id);
+              if (context.mounted) {
+                Navigator.pop(context);
+                if (!success) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        controller.errorMessage ?? 'Failed to delete message',
+                      ),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              }
+            },
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Delete'),
+          ),
+        ],
       ),
     );
   }
@@ -409,6 +597,64 @@ class MessageBubble extends StatelessWidget {
               ),
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  void _copyToClipboard(BuildContext context) async {
+    if (message.isDeleted) return;
+
+    await Clipboard.setData(ClipboardData(text: message.content));
+
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Message copied to clipboard'),
+          duration: const Duration(seconds: 2),
+          backgroundColor: Colors.grey[800],
+        ),
+      );
+    }
+  }
+
+  // Helper method to build icon button for message options
+  Widget _buildIconButton({
+    required BuildContext context,
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(context.space(12)),
+      child: Container(
+        padding: EdgeInsets.symmetric(
+          horizontal: context.space(16),
+          vertical: context.space(12),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: EdgeInsets.all(context.space(10)),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: color, size: context.space(24)),
+            ),
+            ResponsiveHelper.verticalSpace(context, 6),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: context.sp(12),
+                color: color,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
         ),
       ),
     );

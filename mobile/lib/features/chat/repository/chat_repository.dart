@@ -86,4 +86,85 @@ class ChatRepository {
       );
     }
   }
+
+  // Get messages with pagination
+  Future<ApiResponse<List<Message>>> getMessagesPaginated({
+    required int coupleId,
+    int limit = 20,
+    int? beforeId,
+  }) async {
+    try {
+      final token = await _storageService.getToken();
+      if (token == null) {
+        return ApiResponse.error(message: 'No authentication token found');
+      }
+
+      String url = '${ApiConfig.getMessages}/$coupleId?limit=$limit';
+      if (beforeId != null) {
+        url += '&before_id=$beforeId';
+      }
+
+      final response = await _apiClient.get<List<Message>>(
+        url,
+        token: token,
+        fromJsonT: (json) {
+          if (json is List) {
+            return json.map((item) => Message.fromJson(item)).toList();
+          }
+          return [];
+        },
+      );
+      return response;
+    } catch (e) {
+      return ApiResponse.error(
+        message: 'Failed to load messages: ${e.toString()}',
+      );
+    }
+  }
+
+  // Update message
+  Future<ApiResponse<bool>> updateMessage({
+    required int messageId,
+    required String content,
+  }) async {
+    try {
+      final token = await _storageService.getToken();
+      if (token == null) {
+        return ApiResponse.error(message: 'No authentication token found');
+      }
+
+      final response = await _apiClient.put<Map<String, dynamic>>(
+        ApiConfig.updateMessage(messageId),
+        token: token,
+        data: {'content': content},
+      );
+
+      return ApiResponse.success(data: response.success);
+    } catch (e) {
+      return ApiResponse.error(
+        message: 'Failed to update message: ${e.toString()}',
+      );
+    }
+  }
+
+  // Delete message
+  Future<ApiResponse<bool>> deleteMessage({required int messageId}) async {
+    try {
+      final token = await _storageService.getToken();
+      if (token == null) {
+        return ApiResponse.error(message: 'No authentication token found');
+      }
+
+      final response = await _apiClient.delete<Map<String, dynamic>>(
+        ApiConfig.deleteMessage(messageId),
+        token: token,
+      );
+
+      return ApiResponse.success(data: response.success);
+    } catch (e) {
+      return ApiResponse.error(
+        message: 'Failed to delete message: ${e.toString()}',
+      );
+    }
+  }
 }
