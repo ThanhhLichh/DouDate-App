@@ -17,6 +17,7 @@ class Message {
   final String? senderName;
   final String? senderAvatar;
   final bool isRead;
+  final DateTime? readAt;
 
   Message({
     required this.id,
@@ -31,6 +32,7 @@ class Message {
     this.senderAvatar,
     this.isRead = true,
     this.reactionsByUserId,
+    this.readAt,
   });
 
   factory Message.fromJson(Map<String, dynamic> json) {
@@ -45,13 +47,14 @@ class Message {
       createdAt: json['created_at'] != null
           ? DateTime.parse(json['created_at'])
           : DateTime.now(),
-      isRead: json['is_read'] ?? true,
+      isRead: json['is_read'] ?? false,
       reactionsByUserId: json['reactions'] != null
           ? {
               for (var r in (json['reactions'] as List))
                 r['user_id'] as int: r['emoji'] as String,
             }
           : null,
+      readAt: json['read_at'] != null ? DateTime.parse(json['read_at']) : null,
     );
   }
 
@@ -78,6 +81,7 @@ class Message {
     String? senderName,
     String? senderAvatar,
     bool? isRead,
+    DateTime? readAt,
   }) {
     return Message(
       id: id ?? this.id,
@@ -92,6 +96,7 @@ class Message {
       senderName: senderName ?? this.senderName,
       senderAvatar: senderAvatar ?? this.senderAvatar,
       isRead: isRead ?? this.isRead,
+      readAt: readAt ?? this.readAt,
     );
   }
 

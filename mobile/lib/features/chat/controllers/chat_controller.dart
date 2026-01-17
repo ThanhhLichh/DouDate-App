@@ -53,11 +53,15 @@ class ChatController extends ChangeNotifier {
 
   StreamSubscription? _presenceSubscription;
   StreamSubscription? _reactionSubscription;
+  StreamSubscription? _readReceiptSubscription;
 
   String? get partnerAvatar => homeController?.dashboardData?.partnerAvatar;
   String? get partnerName => homeController?.dashboardData?.partnerName;
   String? get yourAvatar => homeController?.dashboardData?.yourAvatar;
   String? get yourName => homeController?.dashboardData?.yourName;
+
+  // Track lifecycle
+  bool _isScreenVisible = false;
 
   ChatController({this.homeController, required this.conversationController}) {
     _loadCurrentUserId();
@@ -65,8 +69,8 @@ class ChatController extends ChangeNotifier {
     _listenToWebSocket();
     _listenToPresence();
     _listenToReactions();
+    _listenToReadReceipts();
 
-    // Inject WebSocket service into ConversationController
     conversationController.setWebSocketService(_chatSocketService);
   }
 
@@ -123,6 +127,16 @@ class ChatController extends ChangeNotifier {
         _messages.add(enrichedMessage);
         conversationController.updateLastMessage(enrichedMessage);
         notifyListeners();
+
+        // CHỈ mark as read khi screen visible VÀ tin nhắn từ partner
+        if (_isScreenVisible && message.senderId != _currentUserId) {
+          debugPrint(
+            'New message received while screen is visible, marking as read',
+          );
+          _markNewMessagesAsRead();
+        } else {
+          debugPrint('Screen not visible or own message, NOT marking as read');
+        }
       }
     });
   }
@@ -152,12 +166,30 @@ class ChatController extends ChangeNotifier {
     });
   }
 
+  void _listenToReadReceipts() {
+    _readReceiptSubscription = _chatSocketService.readReceiptStream.listen((
+      receipt,
+    ) {
+      // Update messages that were read by partner
+      for (int i = 0; i < _messages.length; i++) {
+        if (_messages[i].id <= receipt.lastMessageId &&
+            _messages[i].senderId == _currentUserId) {
+          _messages[i] = _messages[i].copyWith(
+            isRead: true,
+            readAt: receipt.readAt,
+          );
+        }
+      }
+      notifyListeners();
+      debugPrint('Partner read messages up to ID: ${receipt.lastMessageId}');
+    });
+  }
+
   Future<void> _requestPresenceState() async {
     if (conversationController.conversation == null) return;
     debugPrint('Waiting for presence state from server...');
   }
 
-  /// Initialize: connect WebSocket
   Future<void> initialize() async {
     if (conversationController.conversation == null) {
       await conversationController.loadConversation();
@@ -188,7 +220,6 @@ class ChatController extends ChangeNotifier {
     }
   }
 
-  /// Fetch messages
   Future<void> fetchMessages() async {
     if (conversationController.conversation == null) {
       await initialize();
@@ -217,10 +248,12 @@ class ChatController extends ChangeNotifier {
         }).toList();
 
         _errorMessage = null;
-
-        await _repository.markAsRead(conversation.coupleId);
-
         notifyListeners();
+
+        // CHỈ mark as read nếu screen visible
+        if (_isScreenVisible) {
+          await markMessagesAsRead();
+        }
 
         if (_messages.isNotEmpty) {
           conversationController.updateLastMessage(_messages.last);
@@ -236,7 +269,6 @@ class ChatController extends ChangeNotifier {
     }
   }
 
-  /// Send text message
   Future<bool> sendMessage(String content) async {
     if (content.trim().isEmpty ||
         conversationController.conversation == null ||
@@ -260,7 +292,6 @@ class ChatController extends ChangeNotifier {
     }
   }
 
-  /// Send multiple images (generic)
   Future<void> sendImageMessages() async {
     if (conversationController.conversation == null ||
         !_chatSocketService.isConnected) {
@@ -286,7 +317,6 @@ class ChatController extends ChangeNotifier {
     }
   }
 
-  /// Send images from gallery
   Future<void> sendImagesFromGallery() async {
     if (conversationController.conversation == null ||
         !_chatSocketService.isConnected) {
@@ -312,7 +342,6 @@ class ChatController extends ChangeNotifier {
     }
   }
 
-  /// Send image from camera
   Future<void> sendImageFromCamera() async {
     if (conversationController.conversation == null ||
         !_chatSocketService.isConnected) {
@@ -380,7 +409,6 @@ class ChatController extends ChangeNotifier {
     );
   }
 
-  /// React to message
   Future<bool> reactToMessage(int messageId, String emoji) async {
     if (_currentUserId == null) return false;
 
@@ -428,6 +456,94 @@ class ChatController extends ChangeNotifier {
     await fetchMessages();
   }
 
+  Future<void> markMessagesAsRead() async {
+    if (conversationController.conversation == null || _messages.isEmpty) {
+      return;
+    }
+
+    try {
+      final partnerMessages = _messages
+          .where((msg) => msg.senderId != _currentUserId)
+          .toList();
+
+      if (partnerMessages.isEmpty) return;
+
+      final lastMessageId = partnerMessages.last.id;
+      final coupleId = conversationController.conversation!.coupleId;
+
+      final response = await _repository.markMessagesAsRead(
+        coupleId: coupleId,
+        lastMessageId: lastMessageId,
+      );
+
+      if (response.success) {
+        for (int i = 0; i < _messages.length; i++) {
+          if (_messages[i].senderId != _currentUserId &&
+              _messages[i].id <= lastMessageId) {
+            _messages[i] = _messages[i].copyWith(
+              isRead: true,
+              readAt: DateTime.now(),
+            );
+          }
+        }
+        notifyListeners();
+
+        debugPrint('Messages marked as read up to ID: $lastMessageId');
+      }
+    } catch (e) {
+      debugPrint('Failed to mark messages as read: $e');
+    }
+  }
+
+  Future<void> _markNewMessagesAsRead() async {
+    debugPrint('conversation: ${conversationController.conversation != null}');
+
+    if (!_isScreenVisible) {
+      debugPrint('Screen NOT visible, skipping mark as read');
+      return;
+    }
+
+    if (conversationController.conversation == null || _messages.isEmpty) {
+      debugPrint('No conversation or messages, skipping');
+      return;
+    }
+
+    final unreadMessages = _messages
+        .where((msg) => msg.senderId != _currentUserId && !msg.isRead)
+        .toList();
+
+    if (unreadMessages.isEmpty) {
+      debugPrint('No unread messages');
+      return;
+    }
+
+    final lastUnreadId = unreadMessages.last.id;
+
+    try {
+      debugPrint('Marking messages as read up to ID: $lastUnreadId');
+      await markMessagesAsRead();
+      debugPrint('Successfully marked as read');
+    } catch (e) {
+      debugPrint('Failed to auto-mark messages: $e');
+    }
+  }
+
+  // Lifecycle methods
+  void onScreenVisible() {
+    debugPrint('ChatController: Screen VISIBLE');
+    _isScreenVisible = true;
+
+    // Mark as read khi vào screen
+    if (_messages.isNotEmpty) {
+      _markNewMessagesAsRead();
+    }
+  }
+
+  void onScreenHidden() {
+    debugPrint('ChatController: Screen HIDDEN');
+    _isScreenVisible = false;
+  }
+
   void clearError() {
     _errorMessage = null;
     notifyListeners();
@@ -435,8 +551,10 @@ class ChatController extends ChangeNotifier {
 
   @override
   void dispose() {
+    debugPrint('🗑️ ChatController: DISPOSING');
     _presenceSubscription?.cancel();
     _reactionSubscription?.cancel();
+    _readReceiptSubscription?.cancel();
     _chatSocketService.dispose();
     super.dispose();
   }

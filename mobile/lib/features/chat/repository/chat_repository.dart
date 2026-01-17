@@ -35,9 +35,28 @@ class ChatRepository {
   }
 
   // Mark messages as read
-  Future<ApiResponse<bool>> markAsRead(int coupleId) async {
-    await Future.delayed(const Duration(milliseconds: 100));
-    return ApiResponse.success(data: true);
+  Future<ApiResponse<bool>> markMessagesAsRead({
+    required int coupleId,
+    required int lastMessageId,
+  }) async {
+    try {
+      final token = await _storageService.getToken();
+      if (token == null) {
+        return ApiResponse.error(message: 'No authentication token found');
+      }
+
+      final response = await _apiClient.post<Map<String, dynamic>>(
+        ApiConfig.checkReadStatus,
+        token: token,
+        data: {'couple_id': coupleId, 'last_message_id': lastMessageId},
+      );
+
+      return ApiResponse.success(data: response.success);
+    } catch (e) {
+      return ApiResponse.error(
+        message: 'Failed to mark messages as read: ${e.toString()}',
+      );
+    }
   }
 
   // React to message

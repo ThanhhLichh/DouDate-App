@@ -15,15 +15,21 @@ class ChatPage extends StatefulWidget {
   State<ChatPage> createState() => _ChatPageState();
 }
 
-class _ChatPageState extends State<ChatPage> {
+class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
   final ScrollController _scrollController = ScrollController();
+  ChatController? _controller; // Lưu reference để tránh context issues
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final chatController = context.read<ChatController>();
       final conversationController = context.read<ConversationController>();
+
+      // Lưu reference
+      _controller = chatController;
 
       if (conversationController.conversation == null) {
         chatController.initialize().then((_) {
@@ -34,12 +40,38 @@ class _ChatPageState extends State<ChatPage> {
       } else {
         chatController.fetchMessages();
       }
+
+      chatController.onScreenVisible();
     });
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+
+    // Xử lý khi app chuyển background/foreground
+    if (_controller != null) {
+      if (state == AppLifecycleState.resumed) {
+        _controller!.onScreenVisible();
+      } else if (state == AppLifecycleState.paused ||
+          state == AppLifecycleState.inactive) {
+        _controller!.onScreenHidden();
+      }
+    }
+  }
+
+  @override
   void dispose() {
+    debugPrint('ChatPage: DISPOSING');
+    WidgetsBinding.instance.removeObserver(this);
     _scrollController.dispose();
+
+    // Sử dụng reference thay vì context.read
+    if (_controller != null) {
+      debugPrint('ChatPage: Calling onScreenHidden');
+      _controller!.onScreenHidden();
+    }
+
     super.dispose();
   }
 

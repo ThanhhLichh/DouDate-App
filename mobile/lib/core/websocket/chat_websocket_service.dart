@@ -15,16 +15,39 @@ class PresenceEvent {
   }
 }
 
+class ReadReceiptEvent {
+  final int userId;
+  final int lastMessageId;
+  final DateTime readAt;
+
+  ReadReceiptEvent({
+    required this.userId,
+    required this.lastMessageId,
+    required this.readAt,
+  });
+
+  factory ReadReceiptEvent.fromJson(Map<String, dynamic> json) {
+    return ReadReceiptEvent(
+      userId: json['user_id'],
+      lastMessageId: json['last_message_id'],
+      readAt: DateTime.parse(json['read_at']),
+    );
+  }
+}
+
 class ChatWebSocketService extends BaseWebSocketManager {
   final _messageController = StreamController<Message>.broadcast();
   final _presenceController = StreamController<PresenceEvent>.broadcast();
   final _settingsUpdateController = StreamController<void>.broadcast();
   final _reactionController = StreamController<MessageReaction>.broadcast();
+  final _readReceiptController = StreamController<ReadReceiptEvent>.broadcast();
 
   Stream<Message> get messageStream => _messageController.stream;
   Stream<PresenceEvent> get presenceStream => _presenceController.stream;
   Stream<void> get settingsUpdateStream => _settingsUpdateController.stream;
   Stream<MessageReaction> get reactionStream => _reactionController.stream;
+  Stream<ReadReceiptEvent> get readReceiptStream =>
+      _readReceiptController.stream;
 
   @override
   String getWebSocketUrl(dynamic params) {
@@ -57,6 +80,12 @@ class ChatWebSocketService extends BaseWebSocketManager {
       } else if (json['type'] == 'reaction') {
         final reaction = MessageReaction.fromWebSocket(json);
         _reactionController.add(reaction);
+      } else if (json['type'] == 'read') {
+        final receipt = ReadReceiptEvent.fromJson(json);
+        _readReceiptController.add(receipt);
+        print(
+          'Read receipt: User ${receipt.userId} read up to ${receipt.lastMessageId}',
+        );
       } else if (type == 'ping') {
         // Ignore ping messages
         return;
@@ -96,6 +125,7 @@ class ChatWebSocketService extends BaseWebSocketManager {
     _messageController.close();
     _presenceController.close();
     _settingsUpdateController.close();
+    _readReceiptController.close();
     super.dispose();
   }
 }

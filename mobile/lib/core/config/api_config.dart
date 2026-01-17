@@ -42,6 +42,7 @@ class ApiConfig {
       '/couple/$coupleId/chat-settings';
   static String updateChatSettings(int coupleId) =>
       '/couple/$coupleId/chat-settings';
+  static String checkReadStatus = '/messages/read';
 
   // Timeouts
   static const int connectTimeout = 30000; // 30 seconds

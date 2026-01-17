@@ -115,8 +115,9 @@ class MessageBubble extends StatelessWidget {
                                         fit: BoxFit.cover,
                                         loadingBuilder:
                                             (context, child, loadingProgress) {
-                                              if (loadingProgress == null)
+                                              if (loadingProgress == null) {
                                                 return child;
+                                              }
                                               return Container(
                                                 width: context.space(200),
                                                 height: context.space(150),
@@ -167,13 +168,13 @@ class MessageBubble extends StatelessWidget {
                         if (message.reactionsByUserId != null &&
                             message.reactionsByUserId!.isNotEmpty)
                           Positioned(
-                            bottom: -context.space(6),
+                            bottom: -context.space(10),
                             right: 0,
                             child: Transform.translate(
                               offset: Offset(-context.space(6), 0),
                               child: Container(
                                 padding: EdgeInsets.symmetric(
-                                  horizontal: context.space(4),
+                                  horizontal: context.space(6),
                                   vertical: context.space(1),
                                 ),
                                 decoration: BoxDecoration(
@@ -188,22 +189,50 @@ class MessageBubble extends StatelessWidget {
                                 ),
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
-                                  children: message.reactionsByUserId!.values
-                                      .map((emoji) {
-                                        return Padding(
-                                          padding: EdgeInsets.symmetric(
-                                            horizontal: context.space(0.5),
-                                          ),
-                                          child: Text(
-                                            emoji,
-                                            style: TextStyle(
-                                              fontSize: context.sp(9),
-                                              height: 1.2,
+                                  children: () {
+                                    final reactionCounts = <String, int>{};
+                                    for (var emoji
+                                        in message.reactionsByUserId!.values) {
+                                      reactionCounts[emoji] =
+                                          (reactionCounts[emoji] ?? 0) + 1;
+                                    }
+
+                                    return reactionCounts.entries.map((entry) {
+                                      final emoji = entry.key;
+                                      final count = entry.value;
+
+                                      return Padding(
+                                        padding: EdgeInsets.symmetric(
+                                          horizontal: context.space(1),
+                                        ),
+                                        child: Row(
+                                          children: [
+                                            Text(
+                                              emoji,
+                                              style: TextStyle(
+                                                fontSize: context.sp(9),
+                                                height: 1.2,
+                                              ),
                                             ),
-                                          ),
-                                        );
-                                      })
-                                      .toList(),
+                                            if (count > 1)
+                                              Padding(
+                                                padding: EdgeInsets.only(
+                                                  left: context.space(2),
+                                                ),
+                                                child: Text(
+                                                  '$count',
+                                                  style: TextStyle(
+                                                    fontSize: context.sp(9),
+                                                    fontWeight: FontWeight.bold,
+                                                    color: Colors.grey[700],
+                                                  ),
+                                                ),
+                                              ),
+                                          ],
+                                        ),
+                                      );
+                                    }).toList();
+                                  }(),
                                 ),
                               ),
                             ),
