@@ -10,8 +10,9 @@ from models.couple import Couple
 from schemas.message import MessageResponse
 from sqlalchemy.orm import joinedload
 from datetime import datetime
-from schemas.message import MarkReadRequest
+from schemas.message import MarkReadRequest, UpdateMessageRequest
 from routers.chat import manager
+from datetime import timedelta
 
 
 router = APIRouter(
@@ -26,10 +27,12 @@ router = APIRouter(
 )
 def get_messages(
     couple_id: int,
+    limit: int = 5,
+    before_id: int | None = None,
     db: Session = Depends(get_db),
     user_id: int = Depends(get_current_user_id),
 ):
-    # Check user thuộc couple
+    # Check user thuộc couple (GIỮ NGUYÊN)
     couple = (
         db.query(Couple)
         .filter(
@@ -47,15 +50,24 @@ def get_messages(
             detail="You are not a member of this couple",
         )
 
-    messages = (
+    q = (
         db.query(Message)
         .options(joinedload(Message.reactions))
         .filter(Message.couple_id == couple_id)
-        .order_by(Message.created_at.asc())
-        .all()
     )
 
-    return messages
+    if before_id:
+        q = q.filter(Message.id < before_id)
+
+    messages = (
+        q.order_by(Message.id.desc())
+         .limit(limit)
+         .all()
+    )
+
+    # FE cần message theo thứ tự cũ → mới
+    return list(reversed(messages))
+
 
 @router.post("/read")
 async def mark_messages_read(
@@ -95,3 +107,70 @@ async def mark_messages_read(
         "status": "ok",
         "read_at": now.isoformat(),
     }
+
+
+@router.put("/{message_id}")
+async def update_message(
+    message_id: int,
+    data: UpdateMessageRequest,
+    db: Session = Depends(get_db),
+    user_id: int = Depends(get_current_user_id),
+):
+    msg = db.query(Message).filter(Message.id == message_id).first()
+    if not msg:
+        raise HTTPException(404)
+
+    if msg.sender_id != user_id:
+        raise HTTPException(403)
+
+    if msg.type != "text":
+        raise HTTPException(400, "Cannot edit this message")
+
+    if datetime.utcnow() - msg.created_at > timedelta(minutes=10):
+        raise HTTPException(400, "Edit time expired")
+
+    msg.content = data.content
+    msg.edited_at = datetime.utcnow()
+    db.commit()
+
+    await manager.broadcast(
+        msg.couple_id,
+        {
+            "type": "message_updated",
+            "message_id": msg.id,
+            "content": msg.content,
+            "edited_at": msg.edited_at.isoformat(),
+        }
+    )
+
+    return {"status": "ok"}
+
+@router.delete("/{message_id}")
+async def delete_message(
+    message_id: int,
+    db: Session = Depends(get_db),
+    user_id: int = Depends(get_current_user_id),
+):
+    msg = db.query(Message).filter(Message.id == message_id).first()
+    if not msg:
+        raise HTTPException(404)
+
+    if msg.sender_id != user_id:
+        raise HTTPException(403)
+
+    if datetime.utcnow() - msg.created_at > timedelta(minutes=10):
+        raise HTTPException(400, "Delete time expired")
+
+    msg.is_deleted = True
+    db.commit()
+
+    await manager.broadcast(
+        msg.couple_id,
+        {
+            "type": "message_deleted",
+            "message_id": msg.id,
+        }
+    )
+
+    return {"status": "ok"}
+

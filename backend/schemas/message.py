@@ -16,6 +16,9 @@ class MessageResponse(BaseModel):
 
     is_read: bool
     read_at: Optional[datetime]
+
+    is_deleted: bool
+    edited_at: Optional[datetime]
     
     reactions: List[ReactionResponse] = []
 
@@ -27,3 +30,7 @@ class MessageResponse(BaseModel):
 class MarkReadRequest(BaseModel):
     couple_id: int
     last_message_id: int
+
+class UpdateMessageRequest(BaseModel):
+    content: str
+

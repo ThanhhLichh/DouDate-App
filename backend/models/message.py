@@ -33,6 +33,10 @@ class Message(Base):
     img_url = Column(Text, nullable=True)        # image original
     thumbnail_url = Column(Text, nullable=True)  # image preview
 
+    is_deleted = Column(Boolean, default=False)
+    edited_at = Column(DateTime, nullable=True)
+
+
     type = Column(
         Enum("text", "image", "system"),
         nullable=False,
