@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import '../../core/services/storage_service.dart';
-import '../../core/services/image_upload_service.dart';
-import '../../core/models/cloudinary_models.dart';
-import 'models/user_profile.dart';
-import 'repository/settings_repository.dart';
-import '../../core/constants/app_constants.dart';
+import '../../../core/services/storage_service.dart';
+import '../../../core/services/image_upload_service.dart';
+import '../../../core/models/cloudinary_models.dart';
+import '../models/user_profile.dart';
+import '../repository/settings_repository.dart';
+import '../../../core/constants/app_constants.dart';
 
 class SettingsController extends ChangeNotifier {
   final StorageService _storageService = StorageService();

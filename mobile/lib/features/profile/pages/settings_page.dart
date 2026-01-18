@@ -1,19 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-import '../../core/utils/responsive_helper.dart';
-import '../../core/constants/app_dimensions.dart';
-import '../../core/providers/dashboard_theme_provider.dart';
-import 'widgets/settings_header.dart';
-import 'widgets/profile_avatar.dart';
-import 'widgets/profile_info_field.dart';
-import 'widgets/connection_status_card.dart';
-import 'widgets/settings_section.dart';
-import 'widgets/settings_item.dart';
-import 'widgets/logout_button.dart';
-import 'widgets/settings_skeleton.dart';
-import 'settings_controller.dart';
-import '../auth/controllers/auth_controller.dart';
+import '../../../core/utils/responsive_helper.dart';
+import '../../../core/constants/app_dimensions.dart';
+import '../../../core/providers/dashboard_theme_provider.dart';
+import '../widgets/settings_header.dart';
+import '../widgets/profile_avatar.dart';
+import '../widgets/profile_info_field.dart';
+import '../widgets/connection_status_card.dart';
+import '../widgets/settings_section.dart';
+import '../widgets/settings_item.dart';
+import '../widgets/logout_button.dart';
+import '../widgets/settings_skeleton.dart';
+import '../controllers/settings_controller.dart';
+import '../../auth/controllers/auth_controller.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});

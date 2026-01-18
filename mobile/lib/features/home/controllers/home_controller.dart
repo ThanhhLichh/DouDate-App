@@ -30,6 +30,7 @@ class HomeController extends ChangeNotifier {
 
   QRCodeData? get qrCodeData => _qrCodeData;
   bool get isLoadingQR => _isLoadingQR;
+  bool _isDisposed = false;
 
   void clearError() {
     _errorMessage = null;
@@ -50,8 +51,18 @@ class HomeController extends ChangeNotifier {
   // Dispose timer khi controller bị dispose
   @override
   void dispose() {
+    _isDisposed = true;
+    _qrTimer?.cancel();
     _qrWebSocketService.disconnect();
+    _qrWebSocketService.dispose();
     super.dispose();
+  }
+
+  @override
+  void notifyListeners() {
+    if (!_isDisposed) {
+      super.notifyListeners();
+    }
   }
 
   // Fetch Dashboard Data
@@ -318,6 +329,5 @@ class HomeController extends ChangeNotifier {
   void clearQRData() {
     _qrTimer?.cancel();
     _qrCodeData = null;
-    notifyListeners();
   }
 }

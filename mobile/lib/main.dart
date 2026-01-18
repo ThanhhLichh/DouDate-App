@@ -13,8 +13,8 @@ import 'features/auth/controllers/auth_controller.dart';
 import 'features/home/controllers/home_controller.dart';
 import 'features/chat/controllers/chat_controller.dart';
 import 'features/chat/controllers/conversation_controller.dart';
-import 'features/memory/memory_controller.dart';
-import 'features/profile/settings_controller.dart';
+import 'features/memory/controllers/memory_controller.dart';
+import 'features/profile/controllers/settings_controller.dart';
 
 // Router
 import 'routes/app_router.dart';

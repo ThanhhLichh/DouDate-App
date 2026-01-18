@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../memory_controller.dart';
+import '../controllers/memory_controller.dart';
 import '../../../core/theme/app_color.dart';
 import '../../../core/utils/responsive_helper.dart';
 import '../../../core/constants/app_dimensions.dart';

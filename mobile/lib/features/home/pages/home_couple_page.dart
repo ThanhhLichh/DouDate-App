@@ -13,8 +13,8 @@ import '../../../core/providers/dashboard_theme_provider.dart';
 import '../../settings/theme_settings_page.dart';
 import '../models/home_models.dart';
 import '../../chat/pages/chat_page.dart';
-import '../../memory/memories_page.dart';
-import '../../profile/settings_page.dart';
+import '../../memory/pages/memories_page.dart';
+import '../../profile/pages/settings_page.dart';
 
 class HomeCouplePage extends StatefulWidget {
   const HomeCouplePage({super.key});

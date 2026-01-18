@@ -24,13 +24,15 @@ class HomeSinglePage extends StatefulWidget {
 class _HomeSinglePageState extends State<HomeSinglePage> {
   bool _isLoggingOut = false;
   StreamSubscription? _qrSub;
+  HomeController? _homeController;
 
   @override
   void initState() {
     super.initState();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final homeController = context.read<HomeController>();
+      _homeController = context.read<HomeController>();
+      final homeController = _homeController!;
 
       // Generate QR
       homeController.generateQRCode();
@@ -58,9 +60,8 @@ class _HomeSinglePageState extends State<HomeSinglePage> {
   @override
   void dispose() {
     _qrSub?.cancel();
-    final homeController = context.read<HomeController>();
-    homeController.disconnectQRWebSocket();
-    homeController.clearQRData();
+    _homeController?.disconnectQRWebSocket();
+    _homeController?.clearQRData();
     super.dispose();
   }
 

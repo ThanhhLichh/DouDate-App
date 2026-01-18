@@ -8,8 +8,9 @@ abstract class BaseWebSocketManager {
   Timer? _pingTimer;
   bool _isConnected = false;
   bool _isManualDisconnect = false;
+  bool _isDisposed = false;
   int _reconnectAttempts = 0;
-  dynamic _lastParams; // ← THÊM field này để lưu params
+  dynamic _lastParams;
 
   static const int _maxReconnectAttempts = 5;
   static const Duration _reconnectDelay = Duration(seconds: 3);
@@ -22,13 +23,13 @@ abstract class BaseWebSocketManager {
   void onConnectionStateChanged(bool isConnected);
 
   Future<void> connect(dynamic params) async {
-    if (_isConnected) {
-      print('${runtimeType}: WebSocket already connected');
+    if (_isConnected || _isDisposed) {
+      print('${runtimeType}: WebSocket already connected or disposed');
       return;
     }
 
     _isManualDisconnect = false;
-    _lastParams = params; // ← LƯU params
+    _lastParams = params;
 
     try {
       final wsUrl = getWebSocketUrl(params);
@@ -37,12 +38,16 @@ abstract class BaseWebSocketManager {
       _channel = WebSocketChannel.connect(Uri.parse(wsUrl));
       _isConnected = true;
       _reconnectAttempts = 0;
-      onConnectionStateChanged(true);
+
+      if (!_isDisposed) {
+        onConnectionStateChanged(true);
+      }
 
       _startPingTimer();
 
       _channel!.stream.listen(
         (data) {
+          if (_isDisposed) return;
           try {
             onMessage(data);
           } catch (e) {
@@ -50,31 +55,34 @@ abstract class BaseWebSocketManager {
           }
         },
         onError: (error) {
+          if (_isDisposed) return;
           print('${runtimeType}: WebSocket error: $error');
           _handleDisconnect();
-          _attemptReconnect(); // ← KHÔNG CẦN pass params nữa
+          _attemptReconnect(); //KHÔNG CẦN pass params nữa
         },
         onDone: () {
+          if (_isDisposed) return;
           print('${runtimeType}: WebSocket connection closed');
           _handleDisconnect();
           if (!_isManualDisconnect) {
-            _attemptReconnect(); // ← KHÔNG CẦN pass params nữa
+            _attemptReconnect(); //KHÔNG CẦN pass params nữa
           }
         },
       );
 
       print('${runtimeType}: Connected successfully');
     } catch (e) {
+      if (_isDisposed) return;
       print('${runtimeType}: Failed to connect: $e');
       _handleDisconnect();
       if (_reconnectAttempts == 0) {
-        _attemptReconnect(); // ← KHÔNG CẦN pass params nữa
+        _attemptReconnect(); //KHÔNG CẦN pass params nữa
       }
     }
   }
 
   void _attemptReconnect() {
-    // ← BỎ params parameter
+    //BỎ params parameter
     if (_isManualDisconnect || _reconnectAttempts >= _maxReconnectAttempts) {
       print(
         '${runtimeType}: Max reconnect attempts reached or manual disconnect',
@@ -89,8 +97,9 @@ abstract class BaseWebSocketManager {
 
     _reconnectTimer?.cancel();
     _reconnectTimer = Timer(_reconnectDelay, () async {
+      if (_isDisposed) return;
       try {
-        await connect(_lastParams); // ← DÙNG _lastParams đã lưu
+        await connect(_lastParams); //DÙNG _lastParams đã lưu
       } catch (e) {
         print('${runtimeType}: Reconnect failed: $e');
       }
@@ -100,13 +109,14 @@ abstract class BaseWebSocketManager {
   void _startPingTimer() {
     _pingTimer?.cancel();
     _pingTimer = Timer.periodic(_pingInterval, (_) {
+      if (_isDisposed) return;
       sendPing();
     });
   }
 
   @protected
   void sendData(dynamic data) {
-    if (_isConnected && _channel != null) {
+    if (_isConnected && _channel != null && !_isDisposed) {
       try {
         _channel!.sink.add(data);
       } catch (e) {
@@ -116,7 +126,7 @@ abstract class BaseWebSocketManager {
   }
 
   void sendPing() {
-    if (_isConnected && _channel != null) {
+    if (_isConnected && _channel != null && !_isDisposed) {
       try {
         _channel!.sink.add('ping');
       } catch (e) {
@@ -137,10 +147,14 @@ abstract class BaseWebSocketManager {
     _pingTimer?.cancel();
     _channel?.sink.close();
     _channel = null;
-    onConnectionStateChanged(false);
+
+    if (!_isDisposed) {
+      onConnectionStateChanged(false);
+    }
   }
 
   void dispose() {
+    _isDisposed = true;
     disconnect();
     _reconnectTimer?.cancel();
     _pingTimer?.cancel();

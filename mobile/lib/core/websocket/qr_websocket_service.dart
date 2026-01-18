@@ -6,6 +6,7 @@ import 'dart:async';
 
 class QRWebSocketService extends BaseWebSocketManager {
   StreamController<QRWebSocketEvent>? _eventController;
+  bool _isDisposed = false;
 
   Stream<QRWebSocketEvent>? get eventStream => _eventController?.stream;
 
@@ -24,6 +25,7 @@ class QRWebSocketService extends BaseWebSocketManager {
 
   @override
   void onMessage(dynamic message) {
+    if (_isDisposed) return;
     try {
       final data = jsonDecode(message);
       final event = QRWebSocketEvent.fromJson(data);
@@ -41,6 +43,7 @@ class QRWebSocketService extends BaseWebSocketManager {
 
   @override
   void dispose() {
+    _isDisposed = true;
     _eventController?.close();
     _eventController = null;
     super.dispose();

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'memory_detail_view.dart';
-import '../memory_controller.dart';
+import '../controllers/memory_controller.dart';
 import '../../../core/utils/responsive_helper.dart';
 
 class AllPhotosView extends StatelessWidget {

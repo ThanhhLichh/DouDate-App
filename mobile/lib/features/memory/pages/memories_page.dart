@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'memory_controller.dart';
-import 'models/memory_models.dart';
-import 'widgets/memory_card_widget.dart';
-import 'widgets/memory_empty_state.dart';
-import 'widgets/memory_skeleton.dart';
-import 'widgets/create_memory_modal.dart';
-import 'widgets/all_photos_view.dart';
-import 'widgets/memory_detail_view.dart';
-import 'widgets/anniversary_memories_view.dart';
-import '../../core/theme/app_color.dart';
-import '../../core/utils/responsive_helper.dart';
-import '../../core/constants/app_dimensions.dart';
+import '../controllers/memory_controller.dart';
+import '../models/memory_models.dart';
+import '../widgets/memory_card_widget.dart';
+import '../widgets/memory_empty_state.dart';
+import '../widgets/memory_skeleton.dart';
+import '../widgets/create_memory_modal.dart';
+import '../widgets/all_photos_view.dart';
+import '../widgets/memory_detail_view.dart';
+import '../widgets/anniversary_memories_view.dart';
+import '../../../core/theme/app_color.dart';
+import '../../../core/utils/responsive_helper.dart';
+import '../../../core/constants/app_dimensions.dart';
 
 class MemoriesPage extends StatefulWidget {
   const MemoriesPage({super.key});

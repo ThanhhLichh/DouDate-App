@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:convert';
 import 'dart:io';
-import 'models/memory_models.dart';
-import 'repository/memory_repository.dart';
+import '../models/memory_models.dart';
+import '../repository/memory_repository.dart';
 
 class MemoryController extends ChangeNotifier {
   final MemoryRepository _repository = MemoryRepository();
