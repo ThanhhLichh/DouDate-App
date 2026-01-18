@@ -74,13 +74,13 @@ async def scan_qr_endpoint(
     "/respond",
     response_model=CoupleResponse | None,
 )
-def respond_qr_endpoint(
+async def respond_qr_endpoint(
     data: QrRespondRequest,
     db: Session = Depends(get_db),
     user_id: int = Depends(get_current_user_id),
 ):
     try:
-        result = respond_qr(
+        result = await respond_qr(
             db=db,
             token=data.token,
             user_id=user_id,

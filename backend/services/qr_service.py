@@ -72,7 +72,13 @@ def create_qr(db: Session, user_id: int):
 
 
 async def scan_qr(db: Session, token: str, scanner_user_id: int):
-    qr = db.query(QrToken).filter(QrToken.token == token).first()
+    qr = (
+        db.query(QrToken)
+        .with_for_update()
+        .filter(QrToken.token == token)
+        .first()
+    )
+
     if not qr:
         raise ValueError("QR not found")
 
@@ -121,8 +127,14 @@ async def scan_qr(db: Session, token: str, scanner_user_id: int):
 # RESPOND QR (ACCEPT / REJECT)
 
 
-def respond_qr(db: Session, token: str, user_id: int, action: str):
-    qr = db.query(QrToken).filter(QrToken.token == token).first()
+async def respond_qr(db: Session, token: str, user_id: int, action: str):
+    qr = (
+    db.query(QrToken)
+    .with_for_update()
+    .filter(QrToken.token == token)
+    .first()
+    )
+
     if not qr:
         raise ValueError("QR not found")
 
@@ -156,8 +168,23 @@ def respond_qr(db: Session, token: str, user_id: int, action: str):
     if action == "reject":
         request.status = "rejected"
         request.to_user_id = user_id
+        qr.is_used = True
         db.commit()
+
+        # 🔔 realtime notify cho người tạo QR
+        await qr_manager.notify_qr_scanned(
+            qr.user_id,
+            {
+                "event": "CONNECTION_REJECTED",
+                "data": {
+                    "message": "Connection declined",
+                    "by_user_id": user_id,
+                }
+            }
+        )
+
         return None
+
 
     # ACCEPT
     if action != "accept":
@@ -171,10 +198,31 @@ def respond_qr(db: Session, token: str, user_id: int, action: str):
 
     request.status = "accepted"
     request.to_user_id = user_id
-    qr.is_used = True
+    db.query(QrToken).filter(
+        QrToken.user_id == qr.user_id,
+        QrToken.is_used == False,
+    ).update(
+        {"is_used": True},
+        synchronize_session=False,
+    )
 
     db.add(couple)
     db.commit()
     db.refresh(couple)
 
+    # 🔔 realtime notify cho người tạo QR
+    partner = db.query(User).filter(User.id == user_id).first()
+
+    await qr_manager.notify_qr_scanned(
+        qr.user_id,
+        {
+            "event": "CONNECTION_ACCEPTED",
+            "data": {
+                "partner_id": user_id,
+                "partner_name": partner.full_name if partner else None,
+                "couple_id": couple.id,
+                "start_date": couple.start_date.isoformat(),
+            }
+        }
+    )
     return couple

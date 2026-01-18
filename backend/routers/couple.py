@@ -141,7 +141,8 @@ def get_couple_stats(
     "/break",
     status_code=status.HTTP_200_OK,
 )
-def break_couple(
+@router.post("/break", status_code=status.HTTP_200_OK)
+async def break_couple(
     db: Session = Depends(get_db),
     user_id: int = Depends(get_current_user_id),
 ):
@@ -166,9 +167,21 @@ def break_couple(
     couple.end_date = date.today()
     db.commit()
 
+    # 🔥 BẮN SOCKET CHO CẢ 2
+    await manager.broadcast(
+        couple.id,
+        {
+            "type": "couple_break",
+            "couple_id": couple.id,
+            "ended_by": user_id,
+            "ended_at": couple.end_date.isoformat(),
+        }
+    )
+
     return {
         "message": "Couple ended successfully"
     }
+
 
 @router.get(
     "/{couple_id}/chat-settings",
