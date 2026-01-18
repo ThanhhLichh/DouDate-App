@@ -4,7 +4,7 @@ import '../../../../core/utils/responsive_helper.dart';
 import '../../../../core/constants/app_dimensions.dart';
 import '../../../../core/theme/theme_constants.dart';
 import '../../models/chat_models.dart';
-import '../../page/conversation_settings_page.dart';
+import '../../pages/conversation_settings_page.dart';
 import '../../controllers/chat_controller.dart';
 import '../../controllers/conversation_controller.dart';
 

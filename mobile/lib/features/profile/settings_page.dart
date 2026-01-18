@@ -13,7 +13,7 @@ import 'widgets/settings_item.dart';
 import 'widgets/logout_button.dart';
 import 'widgets/settings_skeleton.dart';
 import 'settings_controller.dart';
-import '../../features/auth/auth_controller.dart';
+import '../auth/controllers/auth_controller.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});

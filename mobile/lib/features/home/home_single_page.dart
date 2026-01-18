@@ -6,7 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/utils/responsive_helper.dart';
 import '../../core/constants/app_dimensions.dart';
 import '../../core/providers/dashboard_theme_provider.dart';
-import '../auth/auth_controller.dart';
+import '../auth/controllers/auth_controller.dart';
 import 'home_controller.dart';
 import 'widgets/single/qr_code_card.dart';
 import 'widgets/single/scan_qr_button.dart';

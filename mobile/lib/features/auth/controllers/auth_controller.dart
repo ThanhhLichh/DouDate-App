@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import '../../core/services/storage_service.dart';
-import 'models/auth_models.dart';
-import 'repository/auth_repository.dart';
-import '../../core/constants/app_constants.dart';
+import '../../../core/services/storage_service.dart';
+import '../models/auth_models.dart';
+import '../repository/auth_repository.dart';
+import '../../../core/constants/app_constants.dart';
 
 class AuthController extends ChangeNotifier {
   final StorageService _storageService = StorageService();
