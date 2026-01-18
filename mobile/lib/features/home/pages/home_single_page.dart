@@ -3,15 +3,15 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
-import '../../core/utils/responsive_helper.dart';
-import '../../core/constants/app_dimensions.dart';
-import '../../core/providers/dashboard_theme_provider.dart';
-import '../auth/controllers/auth_controller.dart';
-import 'home_controller.dart';
-import 'widgets/single/qr_code_card.dart';
-import 'widgets/single/scan_qr_button.dart';
-import 'widgets/single/background_decoration.dart';
-import 'widgets/single/single_page_skeleton.dart';
+import '../../../core/utils/responsive_helper.dart';
+import '../../../core/constants/app_dimensions.dart';
+import '../../../core/providers/dashboard_theme_provider.dart';
+import '../../auth/controllers/auth_controller.dart';
+import '../controllers/home_controller.dart';
+import '../widgets/single/qr_code_card.dart';
+import '../widgets/single/scan_qr_button.dart';
+import '../widgets/single/background_decoration.dart';
+import '../widgets/single/single_page_skeleton.dart';
 import 'qr_scanner_page.dart';
 
 class HomeSinglePage extends StatefulWidget {
@@ -23,28 +23,23 @@ class HomeSinglePage extends StatefulWidget {
 
 class _HomeSinglePageState extends State<HomeSinglePage> {
   bool _isLoggingOut = false;
-  late HomeController _homeController;
   StreamSubscription? _qrSub;
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _homeController = context.read<HomeController>();
-  }
 
   @override
   void initState() {
     super.initState();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      final homeController = context.read<HomeController>();
+
       // Generate QR
-      _homeController.generateQRCode();
+      homeController.generateQRCode();
 
       // Connect WebSocket
-      _homeController.connectQRWebSocket();
+      homeController.connectQRWebSocket();
 
       // Listen QR events
-      _qrSub = _homeController.qrEventStream?.listen((event) {
+      _qrSub = homeController.qrEventStream?.listen((event) {
         if (!mounted) return;
 
         if (event.event == 'QR_SCANNED') {
@@ -63,8 +58,9 @@ class _HomeSinglePageState extends State<HomeSinglePage> {
   @override
   void dispose() {
     _qrSub?.cancel();
-    _homeController.disconnectQRWebSocket();
-    _homeController.clearQRData();
+    final homeController = context.read<HomeController>();
+    homeController.disconnectQRWebSocket();
+    homeController.clearQRData();
     super.dispose();
   }
 

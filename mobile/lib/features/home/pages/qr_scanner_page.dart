@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
-import '../../core/utils/responsive_helper.dart';
-import '../../core/constants/app_dimensions.dart';
-import '../../core/providers/dashboard_theme_provider.dart';
-import 'home_controller.dart';
-import 'widgets/single/qr_confirm_dialog.dart';
+import '../../../core/utils/responsive_helper.dart';
+import '../../../core/constants/app_dimensions.dart';
+import '../../../core/providers/dashboard_theme_provider.dart';
+import '../controllers/home_controller.dart';
+import '../widgets/single/qr_confirm_dialog.dart';
 
 class QRScannerPage extends StatefulWidget {
   const QRScannerPage({super.key});

@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
-import '../../core/services/storage_service.dart';
-import 'models/home_models.dart';
-import 'repository/home_repository.dart';
+import '../../../core/services/storage_service.dart';
+import '../models/home_models.dart';
+import '../repository/home_repository.dart';
 import 'dart:async';
-import 'models/qr_models.dart';
-import '../../core/constants/app_constants.dart';
-import 'models/qr_scan_models.dart';
+import '../models/qr_models.dart';
+import '../../../core/constants/app_constants.dart';
+import '../models/qr_scan_models.dart';
 // import '../../core/services/qr_websocket_service.dart';
-import '../../core/websocket/qr_websocket_service.dart';
+import '../../../core/websocket/qr_websocket_service.dart';
 
 class HomeController extends ChangeNotifier {
   final StorageService _storageService = StorageService();

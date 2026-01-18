@@ -5,7 +5,7 @@ import '../../../../core/utils/responsive_helper.dart';
 import '../../../../core/constants/app_dimensions.dart';
 import '../../../../core/providers/dashboard_theme_provider.dart';
 import '../../models/qr_scan_models.dart';
-import '../../home_controller.dart';
+import '../../controllers/home_controller.dart';
 
 class QRConfirmDialog extends StatefulWidget {
   final ScanQRResponse data;

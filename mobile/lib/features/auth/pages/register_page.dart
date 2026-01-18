@@ -35,14 +35,29 @@ class _RegisterPageState extends State<RegisterPage> {
     final authController = context.read<AuthController>();
     authController.clearError();
 
+    final email = _emailController.text.trim();
+    final password = _passwordController.text;
+
     final success = await authController.register(
       name: _nameController.text.trim(),
-      email: _emailController.text.trim(),
-      password: _passwordController.text,
+      email: email,
+      password: password,
     );
 
-    if (mounted) {
-      if (success) {
+    if (!mounted) return;
+
+    if (success) {
+      // AUTO LOGIN ngay sau khi register thành công
+      final loginSuccess = await authController.login(email, password);
+
+      if (!mounted) return;
+
+      if (loginSuccess) {
+        // Login thành công, check couple status
+        final coupleStatus = await authController.checkCoupleStatus();
+
+        if (!mounted) return;
+
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text(
@@ -52,17 +67,35 @@ class _RegisterPageState extends State<RegisterPage> {
             duration: Duration(seconds: 2),
           ),
         );
-        // Navigate to HomeSinglePage để user kết nối với partner
-        context.go('/home-single');
+
+        // Navigate based on couple status
+        if (coupleStatus != null && coupleStatus.hasCouple) {
+          context.go('/home-couple');
+        } else {
+          context.go('/home-single');
+        }
       } else {
+        // Auto login failed - fallback to login page
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(authController.errorMessage ?? 'Registration failed'),
-            backgroundColor: Colors.red,
+            content: Text(
+              authController.errorMessage ??
+                  'Registration successful! Please login.',
+            ),
+            backgroundColor: Colors.orange,
             duration: const Duration(seconds: 3),
           ),
         );
+        context.go('/login');
       }
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(authController.errorMessage ?? 'Registration failed'),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 3),
+        ),
+      );
     }
   }
 

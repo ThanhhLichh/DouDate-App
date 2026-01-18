@@ -6,7 +6,7 @@ import '../repository/chat_repository.dart';
 import '../../../core/websocket/chat_websocket_service.dart';
 import '../../../core/models/cloudinary_models.dart';
 import 'dart:async';
-import '../../home/home_controller.dart';
+import '../../home/controllers/home_controller.dart';
 import '../../../core/services/image_upload_service.dart';
 import 'conversation_controller.dart';
 

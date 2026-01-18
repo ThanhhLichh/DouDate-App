@@ -1,20 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'home_controller.dart';
-import 'widgets/couple/home_couple_skeleton.dart';
-import 'widgets/couple/home_header.dart';
-import 'widgets/couple/couple_card.dart';
-import 'widgets/couple/quote_card.dart';
-import 'widgets/couple/stats_grid.dart';
-import 'widgets/couple/home_error_state.dart';
-import '../../core/utils/responsive_helper.dart';
-import '../../core/constants/app_dimensions.dart';
-import '../../core/providers/dashboard_theme_provider.dart';
-import '../settings/theme_settings_page.dart';
-import './models/home_models.dart';
-import '../chat/pages/chat_page.dart';
-import '../memory/memories_page.dart';
-import '../profile/settings_page.dart';
+import '../controllers/home_controller.dart';
+import '../widgets/couple/home_couple_skeleton.dart';
+import '../widgets/couple/home_header.dart';
+import '../widgets/couple/couple_card.dart';
+import '../widgets/couple/quote_card.dart';
+import '../widgets/couple/stats_grid.dart';
+import '../widgets/couple/home_error_state.dart';
+import '../../../core/utils/responsive_helper.dart';
+import '../../../core/constants/app_dimensions.dart';
+import '../../../core/providers/dashboard_theme_provider.dart';
+import '../../settings/theme_settings_page.dart';
+import '../models/home_models.dart';
+import '../../chat/pages/chat_page.dart';
+import '../../memory/memories_page.dart';
+import '../../profile/settings_page.dart';
 
 class HomeCouplePage extends StatefulWidget {
   const HomeCouplePage({super.key});
