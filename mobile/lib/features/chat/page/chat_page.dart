@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'controllers/chat_controller.dart';
-import 'controllers/conversation_controller.dart';
-import 'widgets/chat/chat_app_bar.dart';
-import 'widgets/chat/chat_input.dart';
-import 'widgets/chat/message_list.dart';
-import 'widgets/chat/chat_state_views.dart';
-import 'models/conversation_settings_models.dart';
+import '../controllers/chat_controller.dart';
+import '../controllers/conversation_controller.dart';
+import '../widgets/chat/chat_app_bar.dart';
+import '../widgets/chat/chat_input.dart';
+import '../widgets/chat/message_list.dart';
+import '../widgets/chat/chat_state_views.dart';
+import '../models/conversation_settings_models.dart';
 
 class ChatPage extends StatefulWidget {
   const ChatPage({super.key});

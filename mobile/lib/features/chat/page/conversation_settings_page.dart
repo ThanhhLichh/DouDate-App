@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'controllers/chat_controller.dart';
-import 'controllers/conversation_controller.dart';
-import 'widgets/conversation/media_gallery_page.dart';
-import 'widgets/conversation/partner_header.dart';
-import 'widgets/conversation/nicknames_section.dart';
-import 'widgets/conversation/background_theme_section.dart';
-import 'widgets/conversation/bubble_color_section.dart';
-import 'widgets/conversation/quick_emoji_section.dart';
-import 'widgets/conversation/setting_item_title.dart';
+import '../controllers/chat_controller.dart';
+import '../controllers/conversation_controller.dart';
+import '../widgets/conversation/media_gallery_page.dart';
+import '../widgets/conversation/partner_header.dart';
+import '../widgets/conversation/nicknames_section.dart';
+import '../widgets/conversation/background_theme_section.dart';
+import '../widgets/conversation/bubble_color_section.dart';
+import '../widgets/conversation/quick_emoji_section.dart';
+import '../widgets/conversation/setting_item_title.dart';
 
 class ConversationSettingsPage extends StatefulWidget {
   const ConversationSettingsPage({super.key});

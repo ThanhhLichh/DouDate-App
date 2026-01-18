@@ -172,15 +172,16 @@ class MessageBubble extends StatelessWidget {
                                       ),
                                     Text(
                                       message.isDeleted
-                                          ? 'This message has been deleted'
+                                          ? 'Message has been deleted'
                                           : message.content,
                                       style: TextStyle(
                                         color: isMe
                                             ? Colors.white
                                             : Colors.black87,
                                         fontSize: context.sp(
-                                          AppDimensions.fontS,
+                                          AppDimensions.fontXS,
                                         ),
+                                        fontWeight: FontWeight.w500,
                                         fontStyle: message.isDeleted
                                             ? FontStyle.italic
                                             : FontStyle.normal,

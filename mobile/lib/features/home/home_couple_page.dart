@@ -12,7 +12,7 @@ import '../../core/constants/app_dimensions.dart';
 import '../../core/providers/dashboard_theme_provider.dart';
 import '../settings/theme_settings_page.dart';
 import './models/home_models.dart';
-import '../chat/chat_page.dart';
+import '../chat/page/chat_page.dart';
 import '../memory/memories_page.dart';
 import '../profile/settings_page.dart';
 
