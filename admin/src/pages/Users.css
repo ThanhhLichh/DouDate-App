@@ -1,0 +1,132 @@
+.users-page {
+  color: #020617;
+}
+
+.users-title {
+  font-size: 22px;
+  margin-bottom: 20px;
+  font-weight: 700;
+}
+
+/* Table wrapper */
+.users-table-wrap {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
+}
+
+/* Table */
+.users-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.users-table th,
+.users-table td {
+  padding: 14px 18px;
+  text-align: left;
+  font-size: 14px;
+  color: #020617;
+}
+
+.users-table th {
+  background: #f8fafc;
+  color: #020617;
+  font-weight: 600;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.users-table tr {
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.users-table tr:last-child {
+  border-bottom: none;
+}
+
+.users-table tbody tr:hover {
+  background: #f1f5f9;
+}
+
+/* Status */
+.status {
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.status-active {
+  background: rgba(34, 197, 94, 0.15);
+  color: #16a34a;
+}
+
+.status-banned {
+  background: rgba(239, 68, 68, 0.15);
+  color: #dc2626;
+}
+
+/* Action button */
+.action-btn {
+  padding: 6px 16px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+}
+
+.action-btn.ban {
+  background: rgba(239, 68, 68, 0.15);
+  color: #dc2626;
+}
+
+.action-btn.unban {
+  background: rgba(34, 197, 94, 0.15);
+  color: #16a34a;
+}
+
+.action-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Loading & empty */
+.users-loading,
+.users-empty {
+  padding: 24px;
+  color: #64748b;
+}
+
+/* ===== TOOLBAR ===== */
+.users-toolbar {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+/* Search input */
+.users-search {
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  font-size: 14px;
+  outline: none;
+}
+
+.users-search:focus {
+  border-color: #94a3b8;
+}
+
+/* Filter select */
+.users-filter {
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  font-size: 14px;
+  background: #ffffff;
+  cursor: pointer;
+}
+
