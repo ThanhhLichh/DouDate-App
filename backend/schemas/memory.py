@@ -23,3 +23,10 @@ class MemoryResponse(BaseModel):
     model_config = {
         "from_attributes": True
     }
+
+
+class MemoryUpdate(BaseModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
+    image_url: Optional[str] = None
+    memory_date: Optional[date] = None

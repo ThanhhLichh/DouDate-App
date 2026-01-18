@@ -7,7 +7,7 @@ from core.security import get_current_user_id
 
 from models.memory import Memory
 from models.couple import Couple
-from schemas.memory import MemoryCreate, MemoryResponse
+from schemas.memory import MemoryCreate, MemoryResponse, MemoryUpdate
 
 router = APIRouter(
     prefix="/memories",
@@ -90,4 +90,49 @@ def get_memories(
 
 
     return memories
+
+
+@router.put(
+    "/{memory_id}",
+    response_model=MemoryResponse,
+)
+def update_memory(
+    memory_id: int,
+    data: MemoryUpdate,
+    db: Session = Depends(get_db),
+    user_id: int = Depends(get_current_user_id),
+):
+    memory = db.query(Memory).filter(Memory.id == memory_id).first()
+    if not memory:
+        raise HTTPException(404, "Memory not found")
+
+    if memory.created_by != user_id:
+        raise HTTPException(403, "Forbidden")
+
+    for field, value in data.dict(exclude_unset=True).items():
+        setattr(memory, field, value)
+
+    db.commit()
+    db.refresh(memory)
+
+    return memory
+
+@router.delete(
+    "/{memory_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+def delete_memory(
+    memory_id: int,
+    db: Session = Depends(get_db),
+    user_id: int = Depends(get_current_user_id),
+):
+    memory = db.query(Memory).filter(Memory.id == memory_id).first()
+    if not memory:
+        raise HTTPException(404, "Memory not found")
+
+    if memory.created_by != user_id:
+        raise HTTPException(403, "Forbidden")
+
+    db.delete(memory)
+    db.commit()
 
