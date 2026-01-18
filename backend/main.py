@@ -10,6 +10,8 @@ from routers.memories import router as memories_router
 from routers.users import router as users_router
 from routers.qr_socket import router as qr_socket_router
 from routers import message_reactions
+from routers.admin import users as admin_users
+from routers.admin import couples as admin_couples
 from fastapi.middleware.cors import CORSMiddleware
 
 
@@ -28,6 +30,11 @@ app.include_router(memories_router)
 app.include_router(users_router)
 app.include_router(qr_socket_router)
 app.include_router(message_reactions.router)
+
+# admin
+app.include_router(admin_users.router)
+app.include_router(admin_couples.router)
+
 
 @app.get("/health")
 def health_check():

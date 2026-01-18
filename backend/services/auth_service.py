@@ -9,6 +9,9 @@ from sqlalchemy.orm import Session
 from core.config import settings
 from models.user import User
 from models.refresh_token import RefreshToken
+from fastapi import Depends, HTTPException, status  
+from core.db import get_db
+from core.security import get_current_user_id
 
 
 # PASSWORD HASHING
@@ -153,3 +156,24 @@ def login_user(
         "access_token": access_token,
         "refresh_token": refresh_token,
     }
+
+
+def get_current_user(
+    user_id: int = Depends(get_current_user_id),
+    db: Session = Depends(get_db),
+):
+    user = db.query(User).filter(User.id == user_id).first()
+
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="User not found",
+        )
+
+    if not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="User is banned",
+        )
+
+    return user
