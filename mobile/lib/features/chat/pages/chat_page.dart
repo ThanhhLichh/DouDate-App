@@ -155,15 +155,18 @@ class _ChatBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final messageCount = context.select<ChatController, int>(
+      (c) => c.messages.length,
+    );
+
     final isLoading = context.select<ChatController, bool>(
       (c) => c.isLoading && c.messages.isEmpty,
     );
     final errorMessage = context.select<ChatController, String?>(
       (c) => c.messages.isEmpty ? c.errorMessage : null,
     );
-    final hasMessages = context.select<ChatController, bool>(
-      (c) => c.messages.isNotEmpty,
-    );
+
+    final hasMessages = messageCount > 0;
 
     if (isLoading) {
       return const ChatLoadingView();
