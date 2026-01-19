@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import { useEffect, useState, useMemo } from "react";
 import { getCouples, breakCouple } from "../api/admin.couples";
 import "./Couples.css";
@@ -6,6 +7,8 @@ export default function Couples() {
   const [couples, setCouples] = useState([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(null);
+  const navigate = useNavigate();
+
 
   // 🔍 search + filter
   const [search, setSearch] = useState("");
@@ -121,18 +124,28 @@ const filteredCouples = useMemo(() => {
                 <td>{c.start_date}</td>
                 <td>{c.end_date || "-"}</td>
                 <td>
-                  {c.end_date ? (
-                    <span className="status status-ended">Ended</span>
-                  ) : (
+                  <div className="action-group">
                     <button
-                      className="action-btn break"
-                      disabled={actionLoading === c.id}
-                      onClick={() => handleBreak(c)}
+                      className="action-btn view"
+                      onClick={() => navigate(`/messages?coupleId=${c.id}`)}
                     >
-                      {actionLoading === c.id ? "..." : "Break"}
+                      View Messages
                     </button>
-                  )}
+
+                    {c.end_date ? (
+                      <span className="status status-ended">Ended</span>
+                    ) : (
+                      <button
+                        className="action-btn break"
+                        disabled={actionLoading === c.id}
+                        onClick={() => handleBreak(c)}
+                      >
+                        {actionLoading === c.id ? "..." : "Break"}
+                      </button>
+                    )}
+                  </div>
                 </td>
+
               </tr>
             ))}
           </tbody>

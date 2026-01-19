@@ -5,6 +5,7 @@ import Users from "../pages/Users";
 import AdminLayout from "../layout/AdminLayout";
 import AdminGuard from "../auth/AdminGuard";
 import Couples from "../pages/Couples";
+import Messages from "../pages/Messages";
 
 export default function AppRoutes() {
   return (
@@ -25,6 +26,9 @@ export default function AppRoutes() {
         <Route index element={<Dashboard />} />
         <Route path="users" element={<Users />} />
         <Route path="couples" element={<Couples />} />
+        <Route path="couples/:coupleId/messages" element={<Messages />} />
+        <Route path="messages" element={<Messages />} />
+
         {/* sau này thêm settings, reports... */}
       </Route>
     </Routes>

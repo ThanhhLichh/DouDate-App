@@ -115,4 +115,19 @@
   color: #64748b;
 }
 
+.action-group {
+  display: flex;
+  gap: 8px;
+}
+
+.action-btn.view {
+  background: rgba(59, 130, 246, 0.15);
+  color: #2563eb;
+}
+
+.action-btn.view:hover {
+  background: rgba(59, 130, 246, 0.25);
+}
+
+
 

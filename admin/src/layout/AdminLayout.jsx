@@ -62,11 +62,18 @@ export default function AdminLayout() {
             <span>Couples</span>
           </NavLink>
 
+          <NavLink to="/messages" className="nav-item">
+            <MessagesIcon />
+            <span>Messages</span>
+          </NavLink>
 
-          <NavLink to="/settings" className="nav-item">
+
+          {/* <NavLink to="/settings" className="nav-item">
             <SettingsIcon />
             <span>Settings</span>
-          </NavLink>
+          </NavLink> */}
+
+          
         </nav>
       </aside>
 
@@ -138,4 +145,15 @@ function CouplesIcon() {
     </svg>
   );
 }
+
+function MessagesIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="nav-icon">
+      <path d="M21 15a4 4 0 01-4 4H7l-4 3V7a4 4 0 014-4h10a4 4 0 014 4z" />
+      <path d="M8 9h8" />
+      <path d="M8 13h5" />
+    </svg>
+  );
+}
+
 

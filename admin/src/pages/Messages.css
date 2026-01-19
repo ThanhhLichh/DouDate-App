@@ -1,0 +1,152 @@
+/* ===== PAGE ===== */
+.messages-page {
+  color: #020617;
+}
+
+/* ===== HEADER ===== */
+.messages-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+/* ===== TOOLBAR (INPUT + BUTTON) ===== */
+.messages-toolbar {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.messages-toolbar input {
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  font-size: 14px;
+  outline: none;
+}
+
+.messages-toolbar input:focus {
+  border-color: #94a3b8;
+}
+
+.messages-toolbar button {
+  padding: 10px 18px;
+  border-radius: 8px;
+  border: none;
+  background: #020617;
+  color: #ffffff;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.messages-toolbar button:hover {
+  background: #111827;
+}
+
+/* ===== LIST ===== */
+.messages-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* ===== MESSAGE ITEM ===== */
+.message-item {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  padding: 16px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
+}
+
+/* ===== META ===== */
+.message-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: #64748b;
+  margin-bottom: 8px;
+}
+
+/* ===== CONTENT ===== */
+.message-content {
+  font-size: 14px;
+  color: #020617;
+}
+
+.message-content p {
+  margin: 0;
+  line-height: 1.5;
+}
+
+.message-content img {
+  max-width: 260px;
+  border-radius: 10px;
+  display: block;
+  margin-top: 6px;
+  border: 1px solid #e5e7eb;
+}
+
+/* ===== DELETE BUTTON ===== */
+.delete-btn {
+  margin-top: 12px;
+  padding: 6px 16px;
+  border-radius: 999px;
+  border: none;
+  background: rgba(239, 68, 68, 0.15);
+  color: #dc2626;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.delete-btn:hover {
+  background: rgba(239, 68, 68, 0.25);
+}
+
+.delete-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ===== STATE ===== */
+.messages-loading,
+.messages-empty {
+  color: #64748b;
+  padding: 20px;
+}
+
+.messages-pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+  margin-top: 24px;
+}
+
+.messages-pagination button {
+  min-width: 36px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  cursor: pointer;
+}
+
+.messages-pagination button.active {
+  background: #020617;
+  color: #ffffff;
+  border-color: #020617;
+}
+
+.messages-pagination button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.dots {
+  padding: 0 6px;
+  color: #64748b;
+}
+
