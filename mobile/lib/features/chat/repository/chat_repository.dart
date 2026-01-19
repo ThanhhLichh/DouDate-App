@@ -75,7 +75,7 @@ class ChatRepository {
       final response = await _apiClient.post<Map<String, dynamic>>(
         ApiConfig.reactToMessage(messageId),
         token: token,
-        data: request.toJson(),
+        data: request.toJsonWithNull(),
         fromJsonT: (json) => json as Map<String, dynamic>,
       );
 

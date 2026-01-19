@@ -170,7 +170,11 @@ class MessageReaction {
 class ReactionRequest {
   final String? emoji;
   ReactionRequest({this.emoji});
-  Map<String, dynamic> toJson() => {'emoji': emoji};
+  Map<String, dynamic> toJsonWithNull() {
+    final map = <String, dynamic>{};
+    map['emoji'] = emoji;
+    return map;
+  }
 }
 
 /// 4. CONVERSATION MODEL

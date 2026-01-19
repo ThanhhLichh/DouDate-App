@@ -45,9 +45,10 @@ class _ChatInputState extends State<ChatInput> {
 
   @override
   Widget build(BuildContext context) {
-    final chatController = context.watch<ChatController>();
-    final conversationController = context.watch<ConversationController>();
-    final quickEmoji = conversationController.settings?.quickEmoji ?? '❤️';
+    // Chỉ select quickEmoji từ ConversationController
+    final quickEmoji = context.select<ConversationController, String>(
+      (c) => c.settings?.quickEmoji ?? '❤️',
+    );
 
     return Container(
       padding: EdgeInsets.symmetric(
@@ -67,29 +68,11 @@ class _ChatInputState extends State<ChatInput> {
       child: SafeArea(
         child: Row(
           children: [
-            // Camera button
-            IconButton(
-              icon: Icon(
-                Icons.camera_alt,
-                color: const Color(0xFF0084FF),
-                size: context.space(AppDimensions.iconM),
-              ),
-              onPressed: widget.isSending
-                  ? null
-                  : () => chatController.sendImageFromCamera(),
-            ),
+            // Camera button - dùng read() thay vì watch()
+            _CameraButton(isSending: widget.isSending),
 
             // Image picker button
-            IconButton(
-              icon: Icon(
-                Icons.photo,
-                color: const Color(0xFF0084FF),
-                size: context.space(AppDimensions.iconM),
-              ),
-              onPressed: widget.isSending
-                  ? null
-                  : () => chatController.sendImagesFromGallery(),
-            ),
+            _ImagePickerButton(isSending: widget.isSending),
 
             // Text input
             Expanded(
@@ -163,6 +146,48 @@ class _ChatInputState extends State<ChatInput> {
           ],
         ),
       ),
+    );
+  }
+}
+
+// Tách riêng camera button để tránh rebuild
+class _CameraButton extends StatelessWidget {
+  final bool isSending;
+
+  const _CameraButton({required this.isSending});
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      icon: Icon(
+        Icons.camera_alt,
+        color: const Color(0xFF0084FF),
+        size: context.space(AppDimensions.iconM),
+      ),
+      onPressed: isSending
+          ? null
+          : () => context.read<ChatController>().sendImageFromCamera(),
+    );
+  }
+}
+
+// Tách riêng image picker button
+class _ImagePickerButton extends StatelessWidget {
+  final bool isSending;
+
+  const _ImagePickerButton({required this.isSending});
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      icon: Icon(
+        Icons.photo,
+        color: const Color(0xFF0084FF),
+        size: context.space(AppDimensions.iconM),
+      ),
+      onPressed: isSending
+          ? null
+          : () => context.read<ChatController>().sendImagesFromGallery(),
     );
   }
 }

@@ -17,7 +17,7 @@ class ChatPage extends StatefulWidget {
 
 class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
   final ScrollController _scrollController = ScrollController();
-  ChatController? _controller; // Lưu reference để tránh context issues
+  ChatController? _controller;
 
   @override
   void initState() {
@@ -28,7 +28,6 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
       final chatController = context.read<ChatController>();
       final conversationController = context.read<ConversationController>();
 
-      // Lưu reference
       _controller = chatController;
 
       if (conversationController.conversation == null) {
@@ -49,7 +48,6 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
 
-    // Xử lý khi app chuyển background/foreground
     if (_controller != null) {
       if (state == AppLifecycleState.resumed) {
         _controller!.onScreenVisible();
@@ -66,7 +64,6 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
     WidgetsBinding.instance.removeObserver(this);
     _scrollController.dispose();
 
-    // Sử dụng reference thay vì context.read
     if (_controller != null) {
       debugPrint('ChatPage: Calling onScreenHidden');
       _controller!.onScreenHidden();
@@ -75,36 +72,23 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
     super.dispose();
   }
 
-  Future<void> _handleSendMessage(String content) async {
-    final controller = context.read<ChatController>();
-    final success = await controller.sendMessage(content);
-
-    if (success) {
-      if (_scrollController.hasClients) {
-        _scrollController.animateTo(
-          0,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
-        );
-      }
-    } else if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(controller.errorMessage ?? 'Failed to send message'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    final chatController = context.watch<ChatController>();
-    final conversationController = context.watch<ConversationController>();
+    // CHỈ watch những field cần thiết cho initial loading
+    final isConversationLoading = context.select<ConversationController, bool>(
+      (c) => c.isLoading && c.conversation == null,
+    );
+
+    final conversation = context.select<ConversationController, dynamic>(
+      (c) => c.conversation,
+    );
+
+    final conversationError = context.select<ConversationController, String?>(
+      (c) => c.conversation == null ? c.errorMessage : null,
+    );
 
     // 1. Initial Loading
-    if (conversationController.isLoading &&
-        conversationController.conversation == null) {
+    if (isConversationLoading) {
       return Scaffold(
         backgroundColor: Colors.white,
         appBar: PreferredSize(
@@ -116,60 +100,119 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
     }
 
     // 2. Conversation Error
-    if (conversationController.conversation == null) {
+    if (conversation == null) {
       return Scaffold(
         appBar: AppBar(title: const Text('Chat')),
         body: ChatErrorView(
-          message:
-              conversationController.errorMessage ??
-              'Failed to load conversation',
-          onRetry: () => chatController.initialize().then((_) {
-            if (conversationController.conversation != null) {
-              chatController.fetchMessages();
-            }
-          }),
+          message: conversationError ?? 'Failed to load conversation',
+          onRetry: () {
+            final chatController = context.read<ChatController>();
+            final conversationController = context
+                .read<ConversationController>();
+            chatController.initialize().then((_) {
+              if (conversationController.conversation != null) {
+                chatController.fetchMessages();
+              }
+            });
+          },
         ),
       );
     }
 
-    final backgroundTheme =
-        conversationController.settings?.backgroundTheme ??
-        BackgroundTheme.defaultTheme;
-
-    return Scaffold(
-      backgroundColor: Colors.transparent,
-      appBar: ChatAppBar(conversation: conversationController.conversation!),
-      body: Container(
-        decoration: backgroundTheme.decoration,
-        child: Column(
-          children: [
-            Expanded(child: _buildBodyContent(chatController)),
-            ChatInput(
-              onSend: _handleSendMessage,
-              isSending: chatController.isSending,
+    // 3. Main Chat UI với background theme selector
+    return Selector<ConversationController, BackgroundTheme>(
+      selector: (_, controller) =>
+          controller.settings?.backgroundTheme ?? BackgroundTheme.defaultTheme,
+      builder: (context, backgroundTheme, child) {
+        return Scaffold(
+          backgroundColor: Colors.white,
+          appBar: ChatAppBar(conversation: conversation),
+          body: GestureDetector(
+            onTap: () => FocusScope.of(context).unfocus(),
+            child: Container(
+              decoration: backgroundTheme.decoration,
+              child: Column(
+                children: [
+                  Expanded(
+                    child: _ChatBody(scrollController: _scrollController),
+                  ),
+                  const _ChatInputWrapper(),
+                ],
+              ),
             ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
+}
 
-  Widget _buildBodyContent(ChatController controller) {
-    if (controller.isLoading && controller.messages.isEmpty) {
+// Tách riêng body để tránh rebuild không cần thiết
+class _ChatBody extends StatelessWidget {
+  final ScrollController scrollController;
+
+  const _ChatBody({required this.scrollController});
+
+  @override
+  Widget build(BuildContext context) {
+    final isLoading = context.select<ChatController, bool>(
+      (c) => c.isLoading && c.messages.isEmpty,
+    );
+    final errorMessage = context.select<ChatController, String?>(
+      (c) => c.messages.isEmpty ? c.errorMessage : null,
+    );
+    final hasMessages = context.select<ChatController, bool>(
+      (c) => c.messages.isNotEmpty,
+    );
+
+    if (isLoading) {
       return const ChatLoadingView();
     }
-    if (controller.errorMessage != null && controller.messages.isEmpty) {
+
+    if (errorMessage != null) {
       return ChatErrorView(
-        message: controller.errorMessage!,
-        onRetry: () => controller.fetchMessages(),
+        message: errorMessage,
+        onRetry: () => context.read<ChatController>().fetchMessages(),
       );
     }
-    if (controller.messages.isEmpty) return const ChatEmptyView();
+
+    if (!hasMessages) {
+      return const ChatEmptyView();
+    }
 
     return MessageList(
-      controller: controller,
-      scrollController: _scrollController,
-      onRefresh: () => controller.refreshMessages(),
+      controller: context.read<ChatController>(),
+      scrollController: scrollController,
+      onRefresh: () => context.read<ChatController>().refreshMessages(),
+    );
+  }
+}
+
+// Tách riêng input để chỉ rebuild khi isSending thay đổi
+class _ChatInputWrapper extends StatelessWidget {
+  const _ChatInputWrapper();
+
+  @override
+  Widget build(BuildContext context) {
+    final isSending = context.select<ChatController, bool>((c) => c.isSending);
+
+    return ChatInput(
+      onSend: (content) {
+        final controller = context.read<ChatController>();
+        controller.sendMessage(content).then((success) {
+          if (!success && context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  controller.errorMessage ?? 'Failed to send message',
+                ),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+        });
+      },
+      isSending: isSending,
     );
   }
 }

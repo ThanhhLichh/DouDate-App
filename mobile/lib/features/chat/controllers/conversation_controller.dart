@@ -140,6 +140,7 @@ class ConversationController extends ChangeNotifier {
     if (_conversation == null || _settings == null) return false;
 
     try {
+      final oldSettings = _settings;
       _settings = _settings!.copyWith(bubbleColor: hexColor);
       await _saveSettingsToStorage();
       notifyListeners();
@@ -152,10 +153,13 @@ class ConversationController extends ChangeNotifier {
       if (response.success && response.data != null) {
         _settings = response.data;
         await _saveSettingsToStorage();
+      } else {
+        _settings = oldSettings;
+        await _saveSettingsToStorage();
         notifyListeners();
       }
 
-      return true;
+      return response.success;
     } catch (e) {
       return false;
     }
@@ -166,6 +170,7 @@ class ConversationController extends ChangeNotifier {
     if (_conversation == null || _settings == null) return false;
 
     try {
+      final oldSettings = _settings;
       _settings = _settings!.copyWith(quickEmoji: emoji);
       await _saveSettingsToStorage();
       notifyListeners();
@@ -175,13 +180,13 @@ class ConversationController extends ChangeNotifier {
         _settings!,
       );
 
-      if (response.success && response.data != null) {
-        _settings = response.data;
+      if (!response.success) {
+        _settings = oldSettings;
         await _saveSettingsToStorage();
         notifyListeners();
       }
 
-      return true;
+      return response.success;
     } catch (e) {
       return false;
     }
@@ -195,6 +200,7 @@ class ConversationController extends ChangeNotifier {
     if (_conversation == null || _settings == null) return false;
 
     try {
+      final oldSettings = _settings;
       _settings = _settings!.copyWith(
         yourNickname: yourNickname ?? _settings!.yourNickname,
         partnerNickname: partnerNickname ?? _settings!.partnerNickname,
@@ -208,13 +214,13 @@ class ConversationController extends ChangeNotifier {
         _settings!,
       );
 
-      if (response.success && response.data != null) {
-        _settings = response.data;
+      if (!response.success) {
+        _settings = oldSettings;
         await _saveSettingsToStorage();
         notifyListeners();
       }
 
-      return true;
+      return response.success;
     } catch (e) {
       return false;
     }
@@ -225,6 +231,7 @@ class ConversationController extends ChangeNotifier {
     if (_conversation == null || _settings == null) return false;
 
     try {
+      final oldSettings = _settings;
       _settings = _settings!.copyWith(
         backgroundTheme: theme,
         bubbleColor: theme.recommendedBubbleColor,
@@ -238,13 +245,13 @@ class ConversationController extends ChangeNotifier {
         _settings!,
       );
 
-      if (response.success && response.data != null) {
-        _settings = response.data;
+      if (!response.success) {
+        _settings = oldSettings;
         await _saveSettingsToStorage();
         notifyListeners();
       }
 
-      return true;
+      return response.success;
     } catch (e) {
       return false;
     }

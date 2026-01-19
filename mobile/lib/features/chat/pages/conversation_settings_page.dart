@@ -30,7 +30,6 @@ class _ConversationSettingsPageState extends State<ConversationSettingsPage> {
   @override
   Widget build(BuildContext context) {
     final conversationController = context.watch<ConversationController>();
-    final chatController = context.watch<ChatController>();
     final conversation = conversationController.conversation;
     final settings = conversationController.settings;
 
@@ -83,23 +82,33 @@ class _ConversationSettingsPageState extends State<ConversationSettingsPage> {
             settings: settings,
           ),
           const SizedBox(height: 16),
-          Container(
-            color: Colors.white,
-            child: SettingItemTile(
-              icon: Icons.photo_library,
-              title: 'Shared Photos & Videos',
-              subtitle: '${chatController.mediaItems.length} items',
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const MediaGalleryPage(),
-                ),
-              ),
-            ),
-          ),
+          _MediaGalleryTile(),
           const SizedBox(height: 16),
         ],
       ),
+    );
+  }
+}
+
+class _MediaGalleryTile extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Selector<ChatController, int>(
+      selector: (_, controller) => controller.mediaItems.length,
+      builder: (context, mediaCount, _) {
+        return Container(
+          color: Colors.white,
+          child: SettingItemTile(
+            icon: Icons.photo_library,
+            title: 'Shared Photos & Videos',
+            subtitle: '$mediaCount items',
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const MediaGalleryPage()),
+            ),
+          ),
+        );
+      },
     );
   }
 }
