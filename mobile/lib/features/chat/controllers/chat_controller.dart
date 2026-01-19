@@ -535,18 +535,16 @@ class ChatController extends ChangeNotifier {
     );
 
     debugPrint(
-      '📥 Received reaction event: userId=${reaction.userId}, emoji=${reaction.emoji}',
+      'Received reaction event: userId=${reaction.userId}, emoji=${reaction.emoji}',
     );
 
     if (reaction.emoji == null) {
-      // ✅ Server xác nhận XÓA reaction
       currentReactions.remove(reaction.userId);
-      debugPrint('📥 Removed reaction for user ${reaction.userId}');
+      debugPrint('Removed reaction for user ${reaction.userId}');
     } else {
-      // ✅ Server xác nhận THÊM/CẬP NHẬT reaction
       currentReactions[reaction.userId] = reaction.emoji!;
       debugPrint(
-        '📥 Added/Updated reaction for user ${reaction.userId}: ${reaction.emoji}',
+        'Added/Updated reaction for user ${reaction.userId}: ${reaction.emoji}',
       );
     }
 
@@ -573,52 +571,50 @@ class ChatController extends ChangeNotifier {
       );
       final existingEmoji = currentReactions[_currentUserId!];
 
-      debugPrint('🔍 Current emoji for user $_currentUserId: $existingEmoji');
-      debugPrint('🔍 New emoji: $emoji');
+      debugPrint('Current emoji for user $_currentUserId: $existingEmoji');
+      debugPrint('New emoji: $emoji');
 
       String? emojiToSend;
       Map<int, String>? newReactions;
 
-      // ✅ LOGIC MỚI: So sánh chính xác emoji
       if (existingEmoji == emoji) {
-        // User đã react emoji này rồi → XÓA
-        debugPrint('❌ Removing reaction');
+        debugPrint('Removing reaction');
         currentReactions.remove(_currentUserId!);
-        emojiToSend = null; // Gửi null để xóa
-        newReactions = currentReactions.isEmpty ? null : currentReactions;
+        emojiToSend = null;
+        newReactions = {};
       } else {
-        // User chưa react emoji này hoặc react emoji khác → THÊM/CẬP NHẬT
-        debugPrint('✅ Adding/Updating reaction');
+        debugPrint('Adding/Updating reaction');
         currentReactions[_currentUserId!] = emoji!;
         emojiToSend = emoji;
         newReactions = currentReactions;
       }
 
-      // ✅ Optimistic update với state mới
+      // Optimistic update với state mới
       final oldMessage = message;
       _messages[messageIndex] = message.copyWith(
         reactionsByUserId: newReactions,
       );
+
+      debugPrint('Optimistic update: newReactions = $newReactions');
       notifyListeners();
 
-      debugPrint('📤 Sending to server: emoji=$emojiToSend');
+      debugPrint('Sending to server: emoji=$emojiToSend');
 
-      // ✅ Gửi request đến server
+      // Gửi request đến server
       final response = await _repository.reactToMessage(messageId, emojiToSend);
 
       if (!response.success) {
-        // ✅ Rollback nếu thất bại
-        debugPrint('❌ Server request failed, rolling back');
+        debugPrint('Server request failed, rolling back');
         _messages[messageIndex] = oldMessage;
         notifyListeners();
         _errorMessage = response.message ?? 'Failed to react';
         return false;
       }
 
-      debugPrint('✅ Reaction updated successfully');
+      debugPrint('Reaction updated successfully');
       return true;
     } catch (e) {
-      debugPrint('❌ Error in reactToMessage: $e');
+      debugPrint('Error in reactToMessage: $e');
       _errorMessage = 'Failed to react: $e';
       return false;
     }

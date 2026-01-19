@@ -88,7 +88,6 @@ class _MessageListState extends State<MessageList> {
               );
 
           return Column(
-            key: ValueKey('msg_${message.id}'),
             children: [
               MessageBubble(
                 message: message,
