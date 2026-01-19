@@ -12,6 +12,8 @@ from routers.qr_socket import router as qr_socket_router
 from routers import message_reactions
 from routers.admin import users as admin_users
 from routers.admin import couples as admin_couples
+from routers.admin import messages as admin_messages
+from routers.admin import dashboard as admin_dashboard
 from fastapi.middleware.cors import CORSMiddleware
 
 
@@ -34,6 +36,8 @@ app.include_router(message_reactions.router)
 # admin
 app.include_router(admin_users.router)
 app.include_router(admin_couples.router)
+app.include_router(admin_messages.router)
+app.include_router(admin_dashboard.router)
 
 
 @app.get("/health")
