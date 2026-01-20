@@ -64,6 +64,26 @@ class HomeController extends ChangeNotifier {
     }
   }
 
+  // Clean up all couple-related data
+  Future<void> cleanupCoupleData() async {
+    try {
+      debugPrint('HomeController: Cleaning up couple data...');
+
+      _dashboardData = null;
+      _qrTimer?.cancel();
+      _qrCodeData = null;
+      _scannedQRData = null;
+
+      await _storageService.deletePartnerId();
+
+      debugPrint('HomeController: Couple data cleanup completed');
+
+      notifyListeners();
+    } catch (e) {
+      debugPrint('HomeController: Error cleaning up couple data - $e');
+    }
+  }
+
   // Fetch Dashboard Data
   Future<bool> fetchDashboardData() async {
     _isLoading = true;

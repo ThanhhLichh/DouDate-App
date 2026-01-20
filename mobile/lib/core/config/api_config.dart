@@ -1,6 +1,6 @@
 class ApiConfig {
   // Base URL - Thay đổi theo môi trường
-  static const String baseUrl = 'http://172.20.10.3:8000'; // FastAPI default
+  static const String baseUrl = 'http://192.168.1.5:8000'; // FastAPI default
   // static const String baseUrl = 'http://10.0.2.2:8000'; // Android Emulator
   // static const String baseUrl = 'https://your-domain.com'; // Production
 

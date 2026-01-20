@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import '../../auth/controllers/auth_controller.dart';
 import 'package:provider/provider.dart';
 import '../controllers/home_controller.dart';
 import '../widgets/couple/home_couple_skeleton.dart';
@@ -25,17 +27,82 @@ class HomeCouplePage extends StatefulWidget {
 
 class _HomePageState extends State<HomeCouplePage> {
   int _selectedIndex = 0;
+  bool _isCheckingCouple = false;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<HomeController>().fetchDashboardData();
+      _initializePage();
     });
   }
 
+  Future<void> _initializePage() async {
+    final stillHasCouple = await _verifyCoupleConnection();
+
+    if (!stillHasCouple) return;
+
+    if (mounted) {
+      context.read<HomeController>().fetchDashboardData();
+    }
+  }
+
   Future<void> _handleRefresh() async {
-    await context.read<HomeController>().refreshDashboard();
+    final stillHasCouple = await _verifyCoupleConnection();
+
+    if (!stillHasCouple) return;
+
+    if (mounted) {
+      await context.read<HomeController>().refreshDashboard();
+    }
+  }
+
+  Future<bool> _verifyCoupleConnection() async {
+    if (_isCheckingCouple) return true;
+
+    setState(() {
+      _isCheckingCouple = true;
+    });
+
+    try {
+      final authController = context.read<AuthController>();
+      final coupleStatus = await authController.checkCoupleStatus();
+
+      if (!mounted) return false;
+
+      if (coupleStatus == null || !coupleStatus.hasCouple) {
+        debugPrint(
+          'HomeCouplePage: Couple connection broken - navigating to single page',
+        );
+
+        await context.read<HomeController>().cleanupCoupleData();
+
+        if (!mounted) return false;
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Your connection has been ended'),
+            backgroundColor: Colors.orange,
+            duration: Duration(seconds: 3),
+          ),
+        );
+
+        context.go('/home-single');
+
+        return false;
+      }
+
+      return true;
+    } catch (e) {
+      debugPrint('HomeCouplePage: Error verifying couple connection - $e');
+      return true;
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isCheckingCouple = false;
+        });
+      }
+    }
   }
 
   @override

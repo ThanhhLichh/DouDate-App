@@ -534,7 +534,6 @@ class ChatController extends ChangeNotifier {
 
     final message = _messages[messageIndex];
 
-    // QUAN TRỌNG: Tạo map mới từ current reactions
     final currentReactions = message.reactionsByUserId != null
         ? Map<int, String>.from(message.reactionsByUserId!)
         : <int, String>{};
@@ -554,7 +553,6 @@ class ChatController extends ChangeNotifier {
       );
     }
 
-    // QUAN TRỌNG: Luôn tạo Message object mới
     final updatedReactions = currentReactions.isEmpty ? null : currentReactions;
 
     debugPrint('Updated reactions: $updatedReactions');

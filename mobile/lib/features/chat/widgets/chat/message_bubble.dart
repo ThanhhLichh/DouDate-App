@@ -36,7 +36,7 @@ class MessageBubble extends StatelessWidget {
           content: currentMessage.content,
           isDeleted: currentMessage.isDeleted,
           editedAt: currentMessage.editedAt,
-          updateCount: currentMessage.hashCode, // Dùng hashCode làm version
+          updateCount: currentMessage.hashCode,
         );
 
         debugPrint('[Selector] Message ${message.id}:');
