@@ -527,16 +527,22 @@ class ChatController extends ChangeNotifier {
     final messageIndex = _messages.indexWhere(
       (m) => m.id == reaction.messageId,
     );
-    if (messageIndex == -1) return;
+    if (messageIndex == -1) {
+      debugPrint('Message ${reaction.messageId} not found');
+      return;
+    }
 
     final message = _messages[messageIndex];
-    final currentReactions = Map<int, String>.from(
-      message.reactionsByUserId ?? {},
-    );
+
+    // QUAN TRỌNG: Tạo map mới từ current reactions
+    final currentReactions = message.reactionsByUserId != null
+        ? Map<int, String>.from(message.reactionsByUserId!)
+        : <int, String>{};
 
     debugPrint(
       'Received reaction event: userId=${reaction.userId}, emoji=${reaction.emoji}',
     );
+    debugPrint('Current reactions before update: $currentReactions');
 
     if (reaction.emoji == null) {
       currentReactions.remove(reaction.userId);
@@ -548,14 +554,36 @@ class ChatController extends ChangeNotifier {
       );
     }
 
-    _messages[messageIndex] = message.copyWith(
-      reactionsByUserId: currentReactions.isEmpty ? null : currentReactions,
+    // QUAN TRỌNG: Luôn tạo Message object mới
+    final updatedReactions = currentReactions.isEmpty ? null : currentReactions;
+
+    debugPrint('Updated reactions: $updatedReactions');
+
+    // TẠO OBJECT MỚI HOÀN TOÀN
+    _messages[messageIndex] = Message(
+      id: message.id,
+      coupleId: message.coupleId,
+      senderId: message.senderId,
+      content: message.content,
+      type: message.type,
+      createdAt: message.createdAt,
+      imgUrl: message.imgUrl,
+      thumbnailUrl: message.thumbnailUrl,
+      senderName: message.senderName,
+      senderAvatar: message.senderAvatar,
+      isRead: message.isRead,
+      reactionsByUserId: updatedReactions,
+      readAt: message.readAt,
+      editedAt: message.editedAt,
+      isDeleted: message.isDeleted,
     );
 
     notifyListeners();
+
     debugPrint(
       'Reaction event processed: message ${reaction.messageId}, user ${reaction.userId}, emoji: ${reaction.emoji}',
     );
+    debugPrint('Message object recreated with new reactions');
   }
 
   Future<bool> reactToMessage(int messageId, String? emoji) async {
@@ -581,7 +609,7 @@ class ChatController extends ChangeNotifier {
         debugPrint('Removing reaction');
         currentReactions.remove(_currentUserId!);
         emojiToSend = null;
-        newReactions = {};
+        newReactions = currentReactions.isEmpty ? null : currentReactions;
       } else {
         debugPrint('Adding/Updating reaction');
         currentReactions[_currentUserId!] = emoji!;
@@ -589,7 +617,7 @@ class ChatController extends ChangeNotifier {
         newReactions = currentReactions;
       }
 
-      // Optimistic update với state mới
+      // Optimistic update
       final oldMessage = message;
       _messages[messageIndex] = message.copyWith(
         reactionsByUserId: newReactions,
@@ -600,7 +628,7 @@ class ChatController extends ChangeNotifier {
 
       debugPrint('Sending to server: emoji=$emojiToSend');
 
-      // Gửi request đến server
+      // Send request to server
       final response = await _repository.reactToMessage(messageId, emojiToSend);
 
       if (!response.success) {

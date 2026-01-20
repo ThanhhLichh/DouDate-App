@@ -30,15 +30,24 @@ class MessageBubble extends StatelessWidget {
           orElse: () => message,
         );
 
-        return _MessageData(
-          reactions: currentMessage.reactionsByUserId ?? {},
+        final data = _MessageData(
+          reactions: currentMessage.reactionsByUserId,
           isRead: currentMessage.isRead,
           content: currentMessage.content,
           isDeleted: currentMessage.isDeleted,
           editedAt: currentMessage.editedAt,
+          updateCount: currentMessage.hashCode, // Dùng hashCode làm version
         );
+
+        debugPrint('[Selector] Message ${message.id}:');
+        debugPrint('  - reactions: ${data.reactions}');
+        debugPrint('  - updateCount: ${data.updateCount}');
+
+        return data;
       },
       builder: (context, messageData, _) {
+        debugPrint('[Builder] REBUILDING message ${message.id}');
+        debugPrint('  - reactions in builder: ${messageData.reactions}');
         final currentMessage = controller.messages.firstWhere(
           (m) => m.id == message.id,
           orElse: () => message,
@@ -209,11 +218,12 @@ class MessageBubble extends StatelessWidget {
 
 // Data classes for Selector comparison
 class _MessageData {
-  final Map<int, String> reactions;
+  final Map<int, String>? reactions;
   final bool isRead;
   final String content;
   final bool isDeleted;
   final DateTime? editedAt;
+  final int updateCount;
 
   _MessageData({
     required this.reactions,
@@ -221,32 +231,60 @@ class _MessageData {
     required this.content,
     required this.isDeleted,
     required this.editedAt,
+    required this.updateCount,
   });
 
   @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is _MessageData &&
-          runtimeType == other.runtimeType &&
-          _mapsEqual(reactions, other.reactions) &&
-          isRead == other.isRead &&
-          content == other.content &&
-          isDeleted == other.isDeleted &&
-          editedAt == other.editedAt;
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    if (other is! _MessageData) return false;
+    if (runtimeType != other.runtimeType) return false;
+
+    return _mapsEqual(reactions, other.reactions) &&
+        isRead == other.isRead &&
+        content == other.content &&
+        isDeleted == other.isDeleted &&
+        editedAt == other.editedAt &&
+        updateCount == other.updateCount;
+  }
 
   @override
-  int get hashCode =>
-      reactions.hashCode ^
-      isRead.hashCode ^
-      content.hashCode ^
-      isDeleted.hashCode ^
-      editedAt.hashCode;
-
-  bool _mapsEqual(Map<int, String> a, Map<int, String> b) {
-    if (a.length != b.length) return false;
-    for (var key in a.keys) {
-      if (a[key] != b[key]) return false;
+  int get hashCode {
+    // Convert map to a stable hash
+    int reactionsHash = 0;
+    if (reactions != null) {
+      // Sort keys for consistent hashing
+      final sortedKeys = reactions!.keys.toList()..sort();
+      for (var key in sortedKeys) {
+        reactionsHash = reactionsHash ^ key.hashCode ^ reactions![key].hashCode;
+      }
     }
+
+    return reactionsHash ^
+        isRead.hashCode ^
+        content.hashCode ^
+        isDeleted.hashCode ^
+        (editedAt?.hashCode ?? 0) ^
+        updateCount.hashCode;
+  }
+
+  bool _mapsEqual(Map<int, String>? a, Map<int, String>? b) {
+    // Both null - equal
+    if (a == null && b == null) return true;
+
+    // One null, one not - not equal
+    if (a == null || b == null) return false;
+
+    // Different lengths - not equal
+    if (a.length != b.length) return false;
+
+    // Compare each key-value pair
+    for (var key in a.keys) {
+      if (!b.containsKey(key) || a[key] != b[key]) {
+        return false;
+      }
+    }
+
     return true;
   }
 }
@@ -266,5 +304,5 @@ class _BubbleData {
           avatar == other.avatar;
 
   @override
-  int get hashCode => bubbleColor.hashCode ^ avatar.hashCode;
+  int get hashCode => bubbleColor.hashCode ^ (avatar?.hashCode ?? 0);
 }
