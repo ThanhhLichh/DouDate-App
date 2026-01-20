@@ -68,17 +68,86 @@ class CoupleResponse {
   }
 }
 
-// WebSocket Event
-class QRWebSocketEvent {
+// ========== WebSocket Events ==========
+
+// QR Scanned Event (when someone scans your QR)
+class QRScannedEvent {
   final String event;
   final int fromUserId;
 
-  QRWebSocketEvent({required this.event, required this.fromUserId});
+  QRScannedEvent({required this.event, required this.fromUserId});
 
-  factory QRWebSocketEvent.fromJson(Map<String, dynamic> json) {
-    return QRWebSocketEvent(
+  factory QRScannedEvent.fromJson(Map<String, dynamic> json) {
+    return QRScannedEvent(
       event: json['event'],
       fromUserId: json['from_user_id'],
+    );
+  }
+}
+
+// QR Accepted Event
+class QRAcceptedEvent {
+  final String event;
+  final QRAcceptedData data;
+
+  QRAcceptedEvent({required this.event, required this.data});
+
+  factory QRAcceptedEvent.fromJson(Map<String, dynamic> json) {
+    return QRAcceptedEvent(
+      event: json['event'],
+      data: QRAcceptedData.fromJson(json['data']),
+    );
+  }
+}
+
+class QRAcceptedData {
+  final int partnerId;
+  final String? partnerName;
+  final int coupleId;
+  final DateTime startDate;
+
+  QRAcceptedData({
+    required this.partnerId,
+    required this.partnerName,
+    required this.coupleId,
+    required this.startDate,
+  });
+
+  factory QRAcceptedData.fromJson(Map<String, dynamic> json) {
+    return QRAcceptedData(
+      partnerId: json['partner_id'],
+      partnerName: json['partner_name'],
+      coupleId: json['couple_id'],
+      startDate: DateTime.parse(json['start_date']),
+    );
+  }
+}
+
+// QR Rejected Event
+class QRRejectedEvent {
+  final String event;
+  final QRRejectedData data;
+
+  QRRejectedEvent({required this.event, required this.data});
+
+  factory QRRejectedEvent.fromJson(Map<String, dynamic> json) {
+    return QRRejectedEvent(
+      event: json['event'],
+      data: QRRejectedData.fromJson(json['data']),
+    );
+  }
+}
+
+class QRRejectedData {
+  final String message;
+  final int byUserId;
+
+  QRRejectedData({required this.message, required this.byUserId});
+
+  factory QRRejectedData.fromJson(Map<String, dynamic> json) {
+    return QRRejectedData(
+      message: json['message'],
+      byUserId: json['by_user_id'],
     );
   }
 }

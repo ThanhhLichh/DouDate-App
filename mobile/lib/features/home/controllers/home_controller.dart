@@ -44,14 +44,31 @@ class HomeController extends ChangeNotifier {
   ScanQRResponse? get scannedQRData => _scannedQRData;
   bool get isScanning => _isScanning;
   bool get isResponding => _isResponding;
-  Stream<QRWebSocketEvent>? get qrEventStream =>
-      _qrWebSocketService.eventStream;
 
-  // Dispose timer khi controller bị dispose
+  // WebSocket streams
+  Stream<QRScannedEvent> get scannedStream => _qrWebSocketService.scannedStream;
+  Stream<QRAcceptedEvent> get acceptedStream =>
+      _qrWebSocketService.acceptedStream;
+  Stream<QRRejectedEvent> get rejectedStream =>
+      _qrWebSocketService.rejectedStream;
+
+  // WebSocket subscriptions
+  StreamSubscription<QRScannedEvent>? _scannedSub;
+  StreamSubscription<QRAcceptedEvent>? _acceptedSub;
+  StreamSubscription<QRRejectedEvent>? _rejectedSub;
+
+  // Callbacks for UI navigation
+  Function(QRScannedEvent)? onQRScanned;
+  Function(QRAcceptedEvent)? onQRAccepted;
+  Function(QRRejectedEvent)? onQRRejected;
+
   @override
   void dispose() {
     _isDisposed = true;
     _qrTimer?.cancel();
+    _scannedSub?.cancel();
+    _acceptedSub?.cancel();
+    _rejectedSub?.cancel();
     _qrWebSocketService.disconnect();
     _qrWebSocketService.dispose();
     super.dispose();
@@ -195,22 +212,18 @@ class HomeController extends ChangeNotifier {
 
   // Start timer to auto-refresh QR when expired
   void _startQRTimer() {
-    // Cancel existing timer
     _qrTimer?.cancel();
 
     if (_qrCodeData == null) return;
 
-    // Set timer để refresh QR trước khi hết hạn 10 giây
     final remainingTime = _qrCodeData!.remainingSeconds;
     if (remainingTime > 10) {
       _qrTimer = Timer(Duration(seconds: remainingTime - 10), () {
-        // Chỉ refresh nếu user đang active (controller vẫn có listeners)
         if (hasListeners) {
           generateQRCode();
         }
       });
     } else if (remainingTime > 0) {
-      // Nếu còn ít hơn 10 giây, refresh ngay
       _qrTimer = Timer(Duration(seconds: remainingTime), () {
         if (hasListeners) {
           generateQRCode();
@@ -225,23 +238,71 @@ class HomeController extends ChangeNotifier {
     await generateQRCode();
   }
 
-  // Connect to QR WebSocket
+  // ========== WebSocket Management ==========
+
+  // Connect to QR WebSocket and setup listeners
   Future<void> connectQRWebSocket() async {
     try {
       final token = await _storageService.getToken();
       if (token == null) return;
 
       await _qrWebSocketService.connect(token);
-      print('QR WebSocket connected');
+      debugPrint('QR WebSocket connected');
+
+      // Setup event listeners
+      _setupWebSocketListeners();
     } catch (e) {
-      print('Failed to connect QR WebSocket: $e');
+      debugPrint('Failed to connect QR WebSocket: $e');
     }
+  }
+
+  // Setup WebSocket event listeners
+  void _setupWebSocketListeners() {
+    // Listen to SCANNED events
+    _scannedSub = scannedStream.listen(
+      (event) {
+        debugPrint('QR_SCANNED: User ${event.fromUserId} scanned your QR');
+        onQRScanned?.call(event);
+      },
+      onError: (error) {
+        debugPrint('Error in scanned stream: $error');
+      },
+    );
+
+    // Listen to ACCEPTED events
+    _acceptedSub = acceptedStream.listen(
+      (event) {
+        debugPrint(
+          'QR_ACCEPTED: User ${event.data.partnerId} accepted! Couple ID: ${event.data.coupleId}',
+        );
+        onQRAccepted?.call(event);
+      },
+      onError: (error) {
+        debugPrint('Error in accepted stream: $error');
+      },
+    );
+
+    // Listen to REJECTED events
+    _rejectedSub = rejectedStream.listen(
+      (event) {
+        debugPrint('QR_REJECTED: User ${event.data.byUserId} rejected your QR');
+        onQRRejected?.call(event);
+      },
+      onError: (error) {
+        debugPrint('Error in rejected stream: $error');
+      },
+    );
   }
 
   // Disconnect QR WebSocket
   void disconnectQRWebSocket() {
+    _scannedSub?.cancel();
+    _acceptedSub?.cancel();
+    _rejectedSub?.cancel();
     _qrWebSocketService.disconnect();
   }
+
+  // ========== QR Scan & Respond ==========
 
   // Scan QR Code
   Future<bool> scanQRCode(String qrToken) async {
@@ -304,8 +365,6 @@ class HomeController extends ChangeNotifier {
         _isResponding = false;
         _scannedQRData = null; // Clear scanned data
 
-        // Sử dụng scheduleMicrotask để delay notifyListeners
-        // Điều này đảm bảo notification không xảy ra khi widget tree đang locked
         await Future.microtask(() {});
 
         if (hasListeners) {

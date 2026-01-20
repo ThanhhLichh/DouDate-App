@@ -1,5 +1,4 @@
 import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
@@ -23,7 +22,6 @@ class HomeSinglePage extends StatefulWidget {
 
 class _HomeSinglePageState extends State<HomeSinglePage> {
   bool _isLoggingOut = false;
-  StreamSubscription? _qrSub;
   HomeController? _homeController;
 
   @override
@@ -40,26 +38,72 @@ class _HomeSinglePageState extends State<HomeSinglePage> {
       // Connect WebSocket
       homeController.connectQRWebSocket();
 
-      // Listen QR events
-      _qrSub = homeController.qrEventStream?.listen((event) {
-        if (!mounted) return;
-
-        if (event.event == 'QR_SCANNED') {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Someone scanned your QR code! 🎉'),
-              backgroundColor: Colors.green,
-              duration: Duration(seconds: 3),
-            ),
-          );
-        }
-      });
+      // Setup WebSocket callbacks
+      _setupWebSocketCallbacks(homeController);
     });
+  }
+
+  void _setupWebSocketCallbacks(HomeController controller) {
+    controller.onQRScanned = (event) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Someone scanned your QR code! 🎉'),
+          backgroundColor: Colors.green,
+          duration: Duration(seconds: 3),
+        ),
+      );
+    };
+
+    controller.onQRAccepted = (event) async {
+      if (!mounted) return;
+
+      debugPrint('QR Accepted! Navigating to couple dashboard...');
+
+      // Show success message
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${event.data.partnerName} accepted! 💕'),
+          backgroundColor: Colors.green,
+          duration: const Duration(seconds: 2),
+        ),
+      );
+
+      // Fetch dashboard data
+      await controller.fetchDashboardData();
+
+      if (!mounted) return;
+
+      // Navigate to couple home
+      context.go('/home-couple');
+    };
+
+    // Callback khi QR bị reject
+    controller.onQRRejected = (event) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Request was rejected 😢'),
+          backgroundColor: Colors.orange,
+          duration: Duration(seconds: 3),
+        ),
+      );
+
+      controller.refreshQRCode();
+    };
   }
 
   @override
   void dispose() {
-    _qrSub?.cancel();
+    // Clear callbacks
+    if (_homeController != null) {
+      _homeController!.onQRScanned = null;
+      _homeController!.onQRAccepted = null;
+      _homeController!.onQRRejected = null;
+    }
+
     _homeController?.disconnectQRWebSocket();
     _homeController?.clearQRData();
     super.dispose();
@@ -149,12 +193,9 @@ class _HomeSinglePageState extends State<HomeSinglePage> {
                 onRefresh: () => homeController.refreshQRCode(),
               ),
               ResponsiveHelper.verticalSpace(context, AppDimensions.spaceXL),
-
-              // Updated Scan QR Button with navigation
               ScanQRButton(
                 theme: theme,
                 onTap: () async {
-                  // Navigate to QR Scanner
                   final result = await Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -164,12 +205,10 @@ class _HomeSinglePageState extends State<HomeSinglePage> {
 
                   // If successfully connected, result will be true
                   if (result == true && mounted) {
-                    // Refresh dashboard or navigate
                     await homeController.fetchDashboardData();
                   }
                 },
               ),
-
               ResponsiveHelper.verticalSpace(context, AppDimensions.spaceL),
               _buildBackToLoginButton(context, theme),
               ResponsiveHelper.verticalSpace(context, AppDimensions.spaceL),
