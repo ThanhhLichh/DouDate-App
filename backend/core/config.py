@@ -16,6 +16,12 @@ class Settings(BaseSettings):
     DB_PASSWORD: Optional[str] = Field(None, env="DB_PASSWORD")
     DB_NAME: str = Field(..., env="DB_NAME")
 
+    SMTP_HOST: str
+    SMTP_PORT: int
+    SMTP_USER: str
+    SMTP_PASSWORD: str
+    MAIL_FROM: str
+
     @property
     def DATABASE_URL(self) -> str:
         password = self.DB_PASSWORD or ""
