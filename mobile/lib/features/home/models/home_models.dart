@@ -1,4 +1,5 @@
 class CoupleDashboard {
+  final int coupleId;
   final String partnerName;
   final String? partnerAvatar;
   final String yourName;
@@ -10,6 +11,7 @@ class CoupleDashboard {
   final String todayQuote;
 
   CoupleDashboard({
+    required this.coupleId,
     required this.partnerName,
     this.partnerAvatar,
     required this.yourName,
@@ -26,6 +28,7 @@ class CoupleDashboard {
 
   factory CoupleDashboard.fromJson(Map<String, dynamic> json) {
     return CoupleDashboard(
+      coupleId: json['couple_id'] ?? 0,
       partnerName: json['partner_name'] ?? '',
       partnerAvatar: json['partner_avatar'],
       yourName: json['your_name'] ?? '',
@@ -40,6 +43,7 @@ class CoupleDashboard {
   }
 
   Map<String, dynamic> toJson() => {
+    'couple_id': coupleId,
     'partner_name': partnerName,
     'partner_avatar': partnerAvatar,
     'your_name': yourName,

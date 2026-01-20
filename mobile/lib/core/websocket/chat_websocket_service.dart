@@ -1,39 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
+import 'base_websocket_manager.dart';
 import '../../../core/config/api_config.dart';
 import '../../features/chat/models/chat_models.dart';
-import 'base_websocket_manager.dart';
-
-class PresenceEvent {
-  final int userId;
-  final String status; // "online" hoặc "offline"
-
-  PresenceEvent({required this.userId, required this.status});
-
-  factory PresenceEvent.fromJson(Map<String, dynamic> json) {
-    return PresenceEvent(userId: json['user_id'], status: json['status']);
-  }
-}
-
-class ReadReceiptEvent {
-  final int userId;
-  final int lastMessageId;
-  final DateTime readAt;
-
-  ReadReceiptEvent({
-    required this.userId,
-    required this.lastMessageId,
-    required this.readAt,
-  });
-
-  factory ReadReceiptEvent.fromJson(Map<String, dynamic> json) {
-    return ReadReceiptEvent(
-      userId: json['user_id'],
-      lastMessageId: json['last_message_id'],
-      readAt: DateTime.parse(json['read_at']),
-    );
-  }
-}
 
 class ChatWebSocketService extends BaseWebSocketManager {
   final _messageController = StreamController<Message>.broadcast();

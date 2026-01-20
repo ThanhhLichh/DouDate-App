@@ -6,7 +6,6 @@ import 'dart:async';
 import '../models/qr_models.dart';
 import '../../../core/constants/app_constants.dart';
 import '../models/qr_scan_models.dart';
-// import '../../core/services/qr_websocket_service.dart';
 import '../../../core/websocket/qr_websocket_service.dart';
 
 class HomeController extends ChangeNotifier {
@@ -116,6 +115,7 @@ class HomeController extends ChangeNotifier {
       if (response.success && response.data != null) {
         if (_dashboardData != null) {
           _dashboardData = CoupleDashboard(
+            coupleId: _dashboardData!.coupleId,
             partnerName: _dashboardData!.partnerName,
             partnerAvatar: _dashboardData!.partnerAvatar,
             yourName: _dashboardData!.yourName,

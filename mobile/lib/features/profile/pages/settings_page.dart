@@ -366,8 +366,6 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   void _showGenderPicker(BuildContext context, SettingsController controller) {
-    final theme = context.read<DashboardThemeProvider>().currentTheme;
-
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
