@@ -133,7 +133,7 @@ def get_memories_today(
 
 
 
-@router.put(
+@router.patch(
     "/{memory_id}",
     response_model=MemoryResponse,
 )
@@ -171,9 +171,15 @@ def delete_memory(
     if not memory:
         raise HTTPException(404, "Memory not found")
 
-    if memory.created_by != user_id:
+    couple = db.query(Couple).filter(Couple.id == memory.couple_id).first()
+    if not couple:
+        raise HTTPException(404, "Couple not found")
+
+    #  chỉ cần thuộc cúp bồ
+    if user_id not in [couple.user1_id, couple.user2_id]:
         raise HTTPException(403, "Forbidden")
 
     db.delete(memory)
     db.commit()
+
 

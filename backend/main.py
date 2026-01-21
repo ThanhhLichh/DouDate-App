@@ -15,6 +15,7 @@ from routers.admin import couples as admin_couples
 from routers.admin import messages as admin_messages
 from routers.admin import dashboard as admin_dashboard
 from routers import auth_password
+from routers.admin import memories as admin_memories
 
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -43,6 +44,8 @@ app.include_router(admin_dashboard.router)
 
 # auth password
 app.include_router(auth_password.router)
+
+app.include_router(admin_memories.router)
 
 
 @app.get("/health")
