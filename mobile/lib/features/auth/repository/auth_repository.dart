@@ -33,7 +33,7 @@ class AuthRepository {
         // Lưu userId vào storage
         if (userResponse.success && userResponse.data != null) {
           await storageService.saveUserId(userResponse.data!.id);
-          print("Đã lưu UserId thành công: ${userResponse.data!.id}"); // Debug
+          print("Đã lưu UserId thành công: ${userResponse.data!.id}");
         }
       }
 
@@ -121,6 +121,58 @@ class AuthRepository {
       return response;
     } catch (e) {
       return ApiResponse.error(message: 'Logout failed: ${e.toString()}');
+    }
+  }
+
+  // Forgot Password - Send OTP
+  Future<ApiResponse<ForgotPasswordResponse>> forgotPassword(
+    ForgotPasswordRequest request,
+  ) async {
+    try {
+      final response = await _apiClient.post<ForgotPasswordResponse>(
+        ApiConfig.forgotPassword,
+        data: request.toJson(),
+        fromJsonT: (json) => ForgotPasswordResponse.fromJson(json),
+      );
+      return response;
+    } catch (e) {
+      return ApiResponse.error(message: 'Failed to send OTP: ${e.toString()}');
+    }
+  }
+
+  // Verify OTP
+  Future<ApiResponse<VerifyOtpResponse>> verifyOtp(
+    VerifyOtpRequest request,
+  ) async {
+    try {
+      final response = await _apiClient.post<VerifyOtpResponse>(
+        ApiConfig.verifyOtp,
+        data: request.toJson(),
+        fromJsonT: (json) => VerifyOtpResponse.fromJson(json),
+      );
+      return response;
+    } catch (e) {
+      return ApiResponse.error(
+        message: 'Failed to verify OTP: ${e.toString()}',
+      );
+    }
+  }
+
+  // Reset Password
+  Future<ApiResponse<ResetPasswordResponse>> resetPassword(
+    ResetPasswordRequest request,
+  ) async {
+    try {
+      final response = await _apiClient.post<ResetPasswordResponse>(
+        ApiConfig.resetPassword,
+        data: request.toJson(),
+        fromJsonT: (json) => ResetPasswordResponse.fromJson(json),
+      );
+      return response;
+    } catch (e) {
+      return ApiResponse.error(
+        message: 'Failed to reset password: ${e.toString()}',
+      );
     }
   }
 }

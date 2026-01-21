@@ -27,6 +27,80 @@ class RegisterRequest {
   };
 }
 
+// Forgot Password Request
+class ForgotPasswordRequest {
+  final String email;
+
+  ForgotPasswordRequest({required this.email});
+
+  Map<String, dynamic> toJson() => {'email': email};
+}
+
+// Forgot Password Response
+class ForgotPasswordResponse {
+  final String otpToken;
+  final String message;
+
+  ForgotPasswordResponse({required this.otpToken, required this.message});
+
+  factory ForgotPasswordResponse.fromJson(Map<String, dynamic> json) {
+    return ForgotPasswordResponse(
+      otpToken: json['otp_token'] ?? '',
+      message: json['message'] ?? '',
+    );
+  }
+}
+
+// Verify OTP Request
+class VerifyOtpRequest {
+  final String email;
+  final String otp;
+  final String token;
+
+  VerifyOtpRequest({
+    required this.email,
+    required this.otp,
+    required this.token,
+  });
+
+  Map<String, dynamic> toJson() => {'email': email, 'otp': otp, 'token': token};
+}
+
+// Verify OTP Response
+class VerifyOtpResponse {
+  final String resetToken;
+
+  VerifyOtpResponse({required this.resetToken});
+
+  factory VerifyOtpResponse.fromJson(Map<String, dynamic> json) {
+    return VerifyOtpResponse(resetToken: json['reset_token'] ?? '');
+  }
+}
+
+// Reset Password Request
+class ResetPasswordRequest {
+  final String resetToken;
+  final String newPassword;
+
+  ResetPasswordRequest({required this.resetToken, required this.newPassword});
+
+  Map<String, dynamic> toJson() => {
+    'reset_token': resetToken,
+    'new_password': newPassword,
+  };
+}
+
+// Reset Password Response
+class ResetPasswordResponse {
+  final String message;
+
+  ResetPasswordResponse({required this.message});
+
+  factory ResetPasswordResponse.fromJson(Map<String, dynamic> json) {
+    return ResetPasswordResponse(message: json['message'] ?? '');
+  }
+}
+
 // Auth Response
 class AuthResponse {
   final String accessToken;

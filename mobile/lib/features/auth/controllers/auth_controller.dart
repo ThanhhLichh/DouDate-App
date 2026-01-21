@@ -13,10 +13,18 @@ class AuthController extends ChangeNotifier {
   User? _currentUser;
   String? _errorMessage;
 
+  // Forgot Password state
+  String? _otpToken;
+  String? _resetToken;
+  String? _userEmail;
+
   bool get isLoading => _isLoading;
   bool get isPasswordVisible => _isPasswordVisible;
   User? get currentUser => _currentUser;
   String? get errorMessage => _errorMessage;
+  String? get otpToken => _otpToken;
+  String? get resetToken => _resetToken;
+  String? get userEmail => _userEmail;
 
   void togglePasswordVisibility() {
     _isPasswordVisible = !_isPasswordVisible;
@@ -60,7 +68,7 @@ class AuthController extends ChangeNotifier {
         );
         await _storageService.saveRefreshToken(response.data!.refreshToken);
 
-        // Load user data từ storage (đã có từ register hoặc previous login)
+        // Load user data từ storage
         final userJson = await _storageService.getUser();
         if (userJson != null) {
           _currentUser = User.fromJson(userJson);
@@ -105,7 +113,7 @@ class AuthController extends ChangeNotifier {
     required String email,
     required String password,
   }) async {
-    // Validation using extension methods
+    // Validation
     if (name.isEmpty || email.isEmpty || password.isEmpty) {
       _errorMessage = ErrorMessages.allFieldsRequired;
       notifyListeners();
@@ -145,18 +153,14 @@ class AuthController extends ChangeNotifier {
 
       if (response.success && response.data != null) {
         _currentUser = response.data;
-        // Lưu user info nhưng chưa có token
-        // User sẽ vào HomeSinglePage để kết nối với partner
         await _storageService.saveUser(_currentUser!.toJson());
 
         _isLoading = false;
         notifyListeners();
         return true;
       } else {
-        // Parse error message from backend
         String errorMsg = response.message ?? 'Registration failed';
 
-        // Handle common backend errors
         if (response.errors != null) {
           final errors = response.errors!;
           if (errors.containsKey('email')) {
@@ -179,6 +183,169 @@ class AuthController extends ChangeNotifier {
     }
   }
 
+  // Forgot Password - Send OTP
+  Future<bool> sendOtpToEmail(String email) async {
+    if (email.isEmpty) {
+      _errorMessage = ErrorMessages.emailRequired;
+      notifyListeners();
+      return false;
+    }
+
+    if (!_isValidEmail(email)) {
+      _errorMessage = ErrorMessages.invalidEmail;
+      notifyListeners();
+      return false;
+    }
+
+    _isLoading = true;
+    _errorMessage = null;
+    _userEmail = email;
+    notifyListeners();
+
+    try {
+      final request = ForgotPasswordRequest(email: email);
+      final response = await _authRepository.forgotPassword(request);
+
+      if (response.success && response.data != null) {
+        _otpToken = response.data!.otpToken;
+        _isLoading = false;
+        notifyListeners();
+        return true;
+      } else {
+        _errorMessage = response.message ?? ErrorMessages.failedToSendOtp;
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      }
+    } catch (e) {
+      _errorMessage = ErrorMessages.networkError;
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  // Verify OTP
+  Future<bool> verifyOtp(String otp) async {
+    if (_userEmail == null || _otpToken == null) {
+      _errorMessage = ErrorMessages.sessionInvalid;
+      notifyListeners();
+      return false;
+    }
+
+    if (otp.isEmpty || otp.length != 6) {
+      _errorMessage = ErrorMessages.invalidOtp;
+      notifyListeners();
+      return false;
+    }
+
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final request = VerifyOtpRequest(
+        email: _userEmail!,
+        otp: otp,
+        token: _otpToken!,
+      );
+
+      final response = await _authRepository.verifyOtp(request);
+
+      if (response.success && response.data != null) {
+        _resetToken = response.data!.resetToken;
+        _isLoading = false;
+        notifyListeners();
+        return true;
+      } else {
+        _errorMessage = response.message ?? 'Invalid OTP';
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      }
+    } catch (e) {
+      _errorMessage = ErrorMessages.networkError;
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  // Reset Password
+  Future<bool> resetPassword(String newPassword, String confirmPassword) async {
+    if (_resetToken == null) {
+      _errorMessage = ErrorMessages.sessionInvalid;
+      notifyListeners();
+      return false;
+    }
+
+    if (newPassword.isEmpty || confirmPassword.isEmpty) {
+      _errorMessage = ErrorMessages.allFieldsRequired;
+      notifyListeners();
+      return false;
+    }
+
+    if (newPassword != confirmPassword) {
+      _errorMessage = ErrorMessages.passwordMismatch;
+      notifyListeners();
+      return false;
+    }
+
+    if (newPassword.length < ValidationConstants.minPasswordLength) {
+      _errorMessage = ErrorMessages.shortPassword;
+      notifyListeners();
+      return false;
+    }
+
+    if (!_isStrongPassword(newPassword)) {
+      _errorMessage = ErrorMessages.weakPassword;
+      notifyListeners();
+      return false;
+    }
+
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final request = ResetPasswordRequest(
+        resetToken: _resetToken!,
+        newPassword: newPassword,
+      );
+
+      final response = await _authRepository.resetPassword(request);
+
+      if (response.success) {
+        // Clear forgot password session data
+        _otpToken = null;
+        _resetToken = null;
+        _userEmail = null;
+        _isLoading = false;
+        notifyListeners();
+        return true;
+      } else {
+        _errorMessage = response.message ?? 'Failed to reset password';
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      }
+    } catch (e) {
+      _errorMessage = ErrorMessages.networkError;
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  // Clear forgot password session
+  void clearForgotPasswordSession() {
+    _otpToken = null;
+    _resetToken = null;
+    _userEmail = null;
+    _errorMessage = null;
+    notifyListeners();
+  }
+
   // Refresh Token
   Future<bool> refreshToken() async {
     _isLoading = true;
@@ -194,7 +361,6 @@ class AuthController extends ChangeNotifier {
         return false;
       }
 
-      // Check nếu refresh token đã hết hạn
       final isExpired = await _storageService.isTokenExpired(
         isRefreshToken: true,
       );
@@ -209,7 +375,6 @@ class AuthController extends ChangeNotifier {
       final response = await _authRepository.refreshToken(refreshToken);
 
       if (response.success && response.data != null) {
-        // Lưu tokens mới với expiry time
         await _storageService.saveTokenWithExpiry(response.data!.accessToken);
         await _storageService.saveTokenWithExpiry(
           response.data!.refreshToken,
@@ -239,20 +404,15 @@ class AuthController extends ChangeNotifier {
     notifyListeners();
 
     try {
-      // Get refresh token for API call
       final refreshToken = await _storageService.getRefreshToken();
 
       if (refreshToken != null) {
-        // Call logout API
         final response = await _authRepository.logout(refreshToken);
-
         if (!response.success) {
-          // Log error but continue with local logout
           debugPrint('Logout API failed: ${response.message}');
         }
       }
 
-      // Clear local storage regardless of API result
       await _storageService.deleteToken();
       await _storageService.deleteRefreshToken();
       await _storageService.deleteUser();
@@ -262,7 +422,6 @@ class AuthController extends ChangeNotifier {
       notifyListeners();
       return true;
     } catch (e) {
-      // Even if API fails, still logout locally
       debugPrint('Logout error: $e');
 
       await _storageService.deleteToken();
@@ -297,7 +456,6 @@ class AuthController extends ChangeNotifier {
 
   // Password strength validation
   bool _isStrongPassword(String password) {
-    // Ít nhất 1 chữ hoa, 1 chữ thường, 1 số, 1 ký tự đặc biệt
     final hasUppercase = password.contains(RegExp(r'[A-Z]'));
     final hasLowercase = password.contains(RegExp(r'[a-z]'));
     final hasDigits = password.contains(RegExp(r'[0-9]'));

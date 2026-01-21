@@ -13,6 +13,7 @@ class ErrorMessages {
   static const String shortPassword = 'Password must be at least 6 characters';
   static const String weakPassword =
       'Password must contain uppercase, lowercase, number and special character';
+  static const String passwordMismatch = 'Passwords do not match';
 
   // =====================
   // Authentication Errors
@@ -23,9 +24,13 @@ class ErrorMessages {
   static const String accountNotFound = 'Account not found';
   static const String accountInactive = 'Account is inactive';
   static const String emailExists = 'Email already exists';
+  static const String emailRequired = 'Email is required';
   static const String notAuthenticated = 'Not authenticated';
   static const String refreshTokenNotFound =
       'Refresh token not found. Please login again.';
+  static const String invalidOtp = 'Please enter a valid 6-digit OTP';
+  static const String otpExpired = 'OTP code has expired';
+  static const String failedToSendOtp = 'Failed to send OTP';
 
   // =====================
   // Network & Server Errors
@@ -39,6 +44,7 @@ class ErrorMessages {
   static const String serverError = 'Server error occurred';
   static const String unknownError = 'An unexpected error occurred';
   static const String sessionExpired = 'Session expired. Please login again.';
+  static const String sessionInvalid = 'Session invalid. Please login again.';
 
   // =====================
   // Profile Errors
