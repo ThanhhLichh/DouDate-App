@@ -1,6 +1,6 @@
 class ApiConfig {
   // Base URL - Thay đổi theo môi trường
-  static const String baseUrl = 'http://192.168.1.5:8000'; // FastAPI default
+  static const String baseUrl = 'http://192.168.1.4:8000'; // FastAPI default
   // static const String baseUrl = 'http://10.0.2.2:8000'; // Android Emulator
   // static const String baseUrl = 'https://your-domain.com'; // Production
 
@@ -48,6 +48,13 @@ class ApiConfig {
   static String updateChatSettings(int coupleId) =>
       '/couple/$coupleId/chat-settings';
   static String checkReadStatus = '/messages/read';
+
+  // Memory Endpoints
+  static const String getMemories = '/memories';
+  static const String createMemory = '/memories';
+  static String updateMemory(int memoryId) => '/memories/$memoryId';
+  static String deleteMemory(int memoryId) => '/memories/$memoryId';
+  static const String todayMemories = '/memories/today';
 
   // Timeouts
   static const int connectTimeout = 30000; // 30 seconds

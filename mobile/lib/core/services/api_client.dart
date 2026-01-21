@@ -179,6 +179,27 @@ class ApiClient {
     }
   }
 
+  // PATCH Request
+  Future<ApiResponse<T>> patch<T>(
+    String endpoint, {
+    dynamic data,
+    T Function(dynamic)? fromJsonT,
+    String? token,
+  }) async {
+    try {
+      final response = await _dio.patch(
+        endpoint,
+        data: data,
+        options: token != null
+            ? Options(headers: ApiConfig.authHeaders(token))
+            : null,
+      );
+      return _handleResponse<T>(response, fromJsonT);
+    } catch (e) {
+      return _handleError<T>(e);
+    }
+  }
+
   // DELETE Request
   Future<ApiResponse<T>> delete<T>(
     String endpoint, {

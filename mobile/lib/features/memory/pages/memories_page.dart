@@ -76,7 +76,11 @@ class _MemoriesPageState extends State<MemoriesPage> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () {
+              // Mark as viewed so it won't show again today
+              context.read<MemoryController>().markAnniversaryViewed();
+              Navigator.pop(context);
+            },
             child: Text(
               'Later',
               style: TextStyle(
@@ -87,6 +91,8 @@ class _MemoriesPageState extends State<MemoriesPage> {
           ),
           ElevatedButton(
             onPressed: () {
+              // Mark as viewed
+              context.read<MemoryController>().markAnniversaryViewed();
               Navigator.pop(context);
               _viewAnniversaryMemories(memories);
             },
@@ -124,7 +130,7 @@ class _MemoriesPageState extends State<MemoriesPage> {
     );
   }
 
-  void _showEditMemoryModal(dynamic memory) {
+  void _showEditMemoryModal(Memory memory) {
     final controller = context.read<MemoryController>();
     controller.setEditingMemory(memory);
 
@@ -143,14 +149,14 @@ class _MemoriesPageState extends State<MemoriesPage> {
     );
   }
 
-  void _showMemoryDetail(dynamic memory) {
+  void _showMemoryDetail(Memory memory) {
     Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => MemoryDetailView(memory: memory)),
     );
   }
 
-  void _showMemoryActions(dynamic memory, MemoryController controller) {
+  void _showMemoryActions(Memory memory, MemoryController controller) {
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -191,7 +197,7 @@ class _MemoriesPageState extends State<MemoriesPage> {
     );
   }
 
-  void _showDeleteConfirmation(dynamic memory, MemoryController controller) {
+  void _showDeleteConfirmation(Memory memory, MemoryController controller) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(

@@ -60,7 +60,7 @@ class _AnniversaryMemoriesViewState extends State<AnniversaryMemoriesView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: Colors.white,
       body: Stack(
         children: [
           // Main content
@@ -172,7 +172,7 @@ class _AnniversaryMemoriesViewState extends State<AnniversaryMemoriesView> {
       children: [
         // Image section
         Expanded(
-          flex: 2,
+          flex: 4,
           child: Center(
             child: InteractiveViewer(
               minScale: 0.5,
@@ -214,7 +214,7 @@ class _AnniversaryMemoriesViewState extends State<AnniversaryMemoriesView> {
 
         // Anniversary celebration message
         Expanded(
-          flex: 2,
+          flex: 1,
           child: Container(
             width: double.infinity,
             // padding: EdgeInsets.all(context.space(10)),
@@ -222,29 +222,21 @@ class _AnniversaryMemoriesViewState extends State<AnniversaryMemoriesView> {
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                colors: [Colors.transparent, Colors.black87, Colors.black],
+                colors: [Colors.white, Colors.white],
               ),
             ),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Celebration icon
-                Icon(
-                  Icons.celebration,
-                  size: context.space(60),
-                  color: Colors.amber,
-                ),
-                SizedBox(height: context.space(16)),
-
                 // Anniversary title
                 Text(
                   yearsAgo == 0
                       ? 'Happy Memory Day! 🎉'
                       : '$yearsAgo Year${yearsAgo > 1 ? "s" : ""} Anniversary! 🎊',
                   style: TextStyle(
-                    fontSize: context.sp(AppDimensions.fontXL),
+                    fontSize: context.sp(AppDimensions.fontL),
                     fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                    color: AppColors.primary,
                   ),
                   textAlign: TextAlign.center,
                 ),
@@ -269,27 +261,9 @@ class _AnniversaryMemoriesViewState extends State<AnniversaryMemoriesView> {
                   DateFormat('MMMM dd, yyyy').format(memory.createdAt),
                   style: TextStyle(
                     fontSize: context.sp(AppDimensions.fontM),
-                    color: Colors.white70,
+                    color: AppColors.primary,
                   ),
                   textAlign: TextAlign.center,
-                ),
-
-                SizedBox(height: context.space(16)),
-
-                // Description
-                Container(
-                  constraints: BoxConstraints(maxHeight: context.space(100)),
-                  child: SingleChildScrollView(
-                    child: Text(
-                      memory.description,
-                      style: TextStyle(
-                        fontSize: context.sp(AppDimensions.fontM),
-                        color: Colors.white60,
-                        height: 1.5,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
                 ),
               ],
             ),

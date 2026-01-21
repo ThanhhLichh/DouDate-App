@@ -1,10 +1,11 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../controllers/memory_controller.dart';
 import '../../../core/theme/app_color.dart';
 import '../../../core/utils/responsive_helper.dart';
 import '../../../core/constants/app_dimensions.dart';
+import '../../../core/services/image_upload_service.dart';
+import '../../../core/services/storage_service.dart';
 
 class CreateMemoryModal extends StatefulWidget {
   final bool isEditing;
@@ -18,6 +19,12 @@ class CreateMemoryModal extends StatefulWidget {
 class _CreateMemoryModalState extends State<CreateMemoryModal> {
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
+  final _imageUploadService = ImageUploadService();
+  final _storageService = StorageService();
+
+  String? _uploadedImageUrl;
+  bool _isUploading = false;
+  DateTime? _selectedDate;
 
   @override
   void initState() {
@@ -29,6 +36,9 @@ class _CreateMemoryModalState extends State<CreateMemoryModal> {
         if (memory != null) {
           _titleController.text = memory.title;
           _descriptionController.text = memory.description;
+          _uploadedImageUrl = memory.imageUrl;
+          _selectedDate = memory.memoryDate;
+          setState(() {});
         }
       });
     }
@@ -41,7 +51,7 @@ class _CreateMemoryModalState extends State<CreateMemoryModal> {
     super.dispose();
   }
 
-  void _pickImageSource() {
+  Future<void> _pickImageSource() async {
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -55,7 +65,7 @@ class _CreateMemoryModalState extends State<CreateMemoryModal> {
               title: const Text('Camera'),
               onTap: () {
                 Navigator.pop(context);
-                context.read<MemoryController>().pickImageFromCamera();
+                _pickFromCamera();
               },
             ),
             ListTile(
@@ -63,7 +73,7 @@ class _CreateMemoryModalState extends State<CreateMemoryModal> {
               title: const Text('Gallery'),
               onTap: () {
                 Navigator.pop(context);
-                context.read<MemoryController>().pickImageFromGallery();
+                _pickFromGallery();
               },
             ),
           ],
@@ -72,33 +82,167 @@ class _CreateMemoryModalState extends State<CreateMemoryModal> {
     );
   }
 
+  Future<void> _pickFromCamera() async {
+    setState(() => _isUploading = true);
+
+    try {
+      final coupleId = await _storageService.getUserId();
+      if (coupleId == null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('User not found'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        return;
+      }
+
+      final response = await _imageUploadService.takePhotoAndUploadChatImage(
+        coupleId,
+      );
+
+      if (response != null && response.secureUrl.isNotEmpty) {
+        setState(() {
+          _uploadedImageUrl = response.secureUrl;
+          _isUploading = false;
+        });
+      } else {
+        setState(() => _isUploading = false);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Failed to upload image'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      setState(() => _isUploading = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _pickFromGallery() async {
+    setState(() => _isUploading = true);
+
+    try {
+      final coupleId = await _storageService.getUserId();
+      if (coupleId == null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('User not found'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        return;
+      }
+
+      final response = await _imageUploadService.pickAndUploadMemoryImage(
+        coupleId,
+      );
+
+      if (response != null && response.secureUrl.isNotEmpty) {
+        setState(() {
+          _uploadedImageUrl = response.secureUrl;
+          _isUploading = false;
+        });
+      } else {
+        setState(() => _isUploading = false);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Failed to upload image'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      setState(() => _isUploading = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _selectDate() async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate ?? DateTime.now(),
+      firstDate: DateTime(2000),
+      lastDate: DateTime.now(),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: ColorScheme.light(
+              primary: AppColors.primary,
+              onPrimary: Colors.white,
+              surface: Colors.white,
+              onSurface: Colors.black,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (picked != null && picked != _selectedDate) {
+      setState(() {
+        _selectedDate = picked;
+      });
+    }
+  }
+
   Future<void> _handleSubmit() async {
+    if (_uploadedImageUrl == null || _uploadedImageUrl!.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please select an image'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
     final controller = context.read<MemoryController>();
 
     bool success;
     if (widget.isEditing && controller.editingMemory != null) {
-      String? imageBase64;
-      if (controller.selectedImage != null) {
-        final bytes = await controller.selectedImage!.readAsBytes();
-        imageBase64 = base64Encode(bytes);
-      }
-
       success = await controller.updateMemory(
         memoryId: controller.editingMemory!.id,
         title: _titleController.text.trim(),
         description: _descriptionController.text.trim(),
-        imageBase64: imageBase64,
+        imageUrl: _uploadedImageUrl,
+        memoryDate: _selectedDate,
       );
     } else {
       success = await controller.createMemory(
         title: _titleController.text.trim(),
         description: _descriptionController.text.trim(),
+        imageUrl: _uploadedImageUrl!,
+        memoryDate: _selectedDate,
       );
     }
 
     if (mounted) {
       if (success) {
-        controller.clearSelectedImage();
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -152,6 +296,8 @@ class _CreateMemoryModalState extends State<CreateMemoryModal> {
               _buildTitleField(context),
               SizedBox(height: context.space(16)),
               _buildDescriptionField(context),
+              SizedBox(height: context.space(16)),
+              _buildDatePicker(context),
               SizedBox(height: context.space(24)),
               _buildSubmitButton(context),
             ],
@@ -186,59 +332,56 @@ class _CreateMemoryModalState extends State<CreateMemoryModal> {
   }
 
   Widget _buildImagePicker(BuildContext context) {
-    return Consumer<MemoryController>(
-      builder: (context, controller, child) {
-        final showExistingImage =
-            widget.isEditing &&
-            controller.selectedImage == null &&
-            controller.editingMemory != null;
-
-        return GestureDetector(
-          onTap: _pickImageSource,
-          child: Container(
-            height: context.height * 0.25,
-            decoration: BoxDecoration(
-              color: Colors.grey[100],
-              borderRadius: BorderRadius.circular(15),
-              border: Border.all(color: Colors.grey[300]!),
-            ),
-            child: controller.selectedImage != null
-                ? ClipRRect(
-                    borderRadius: BorderRadius.circular(15),
-                    child: Image.file(
-                      controller.selectedImage!,
-                      fit: BoxFit.cover,
-                    ),
-                  )
-                : showExistingImage
-                ? ClipRRect(
-                    borderRadius: BorderRadius.circular(15),
-                    child: Image.network(
-                      controller.editingMemory!.imageUrl,
-                      fit: BoxFit.cover,
-                    ),
-                  )
-                : Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.add_photo_alternate,
-                        size: context.space(50),
-                        color: Colors.grey[400],
-                      ),
-                      SizedBox(height: context.space(8)),
-                      Text(
-                        widget.isEditing ? 'Change Photo' : 'Add Photo',
-                        style: TextStyle(
-                          color: Colors.grey[600],
-                          fontSize: context.sp(AppDimensions.fontM),
-                        ),
-                      ),
-                    ],
+    return GestureDetector(
+      onTap: _isUploading ? null : _pickImageSource,
+      child: Container(
+        height: context.height * 0.25,
+        decoration: BoxDecoration(
+          color: Colors.grey[100],
+          borderRadius: BorderRadius.circular(15),
+          border: Border.all(color: Colors.grey[300]!),
+        ),
+        child: _isUploading
+            ? const Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    CircularProgressIndicator(),
+                    SizedBox(height: 16),
+                    Text('Uploading...'),
+                  ],
+                ),
+              )
+            : _uploadedImageUrl != null
+            ? ClipRRect(
+                borderRadius: BorderRadius.circular(15),
+                child: Image.network(
+                  _uploadedImageUrl!,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    return const Center(child: Icon(Icons.error));
+                  },
+                ),
+              )
+            : Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.add_photo_alternate,
+                    size: context.space(50),
+                    color: Colors.grey[400],
                   ),
-          ),
-        );
-      },
+                  SizedBox(height: context.space(8)),
+                  Text(
+                    widget.isEditing ? 'Change Photo' : 'Add Photo',
+                    style: TextStyle(
+                      color: Colors.grey[600],
+                      fontSize: context.sp(AppDimensions.fontM),
+                    ),
+                  ),
+                ],
+              ),
+      ),
     );
   }
 
@@ -265,11 +408,34 @@ class _CreateMemoryModalState extends State<CreateMemoryModal> {
     );
   }
 
+  Widget _buildDatePicker(BuildContext context) {
+    return InkWell(
+      onTap: _selectDate,
+      child: InputDecorator(
+        decoration: InputDecoration(
+          labelText: 'Memory Date',
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+          suffixIcon: const Icon(Icons.calendar_today),
+        ),
+        child: Text(
+          _selectedDate != null
+              ? '${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}'
+              : 'Select date',
+          style: TextStyle(
+            color: _selectedDate != null ? Colors.black : Colors.grey[600],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildSubmitButton(BuildContext context) {
     return Consumer<MemoryController>(
       builder: (context, controller, child) {
         return ElevatedButton(
-          onPressed: controller.isLoading ? null : _handleSubmit,
+          onPressed: controller.isLoading || _isUploading
+              ? null
+              : _handleSubmit,
           style: ElevatedButton.styleFrom(
             backgroundColor: AppColors.primary,
             padding: EdgeInsets.symmetric(vertical: context.space(16)),
@@ -287,7 +453,7 @@ class _CreateMemoryModalState extends State<CreateMemoryModal> {
                   ),
                 )
               : Text(
-                  widget.isEditing ? 'Edit Memory' : 'Create Memory',
+                  widget.isEditing ? 'Update Memory' : 'Create Memory',
                   style: TextStyle(
                     fontSize: context.sp(AppDimensions.fontL),
                     fontWeight: FontWeight.bold,

@@ -1,26 +1,30 @@
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
-import 'dart:convert';
 import 'dart:io';
 import '../models/memory_models.dart';
 import '../repository/memory_repository.dart';
+import '../../../core/services/storage_service.dart';
+import '../../../core/services/image_upload_service.dart';
 
 class MemoryController extends ChangeNotifier {
   final MemoryRepository _repository = MemoryRepository();
-  final ImagePicker _picker = ImagePicker();
+  final StorageService _storageService = StorageService();
+  final ImageUploadService _imageUploadService = ImageUploadService();
 
   List<Memory> _memories = [];
   bool _isLoading = false;
   String? _errorMessage;
   File? _selectedImage;
 
+  // For edit mode
+  Memory? _editingMemory;
+
+  // For anniversary reminder - track if shown today
+  String? _lastShownDate;
+
   List<Memory> get memories => _memories;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
   File? get selectedImage => _selectedImage;
-
-  // For edit mode
-  Memory? _editingMemory;
   Memory? get editingMemory => _editingMemory;
 
   void setEditingMemory(Memory? memory) {
@@ -38,6 +42,11 @@ class MemoryController extends ChangeNotifier {
     notifyListeners();
   }
 
+  void setSelectedImage(File? image) {
+    _selectedImage = image;
+    notifyListeners();
+  }
+
   // Load memories
   Future<void> loadMemories() async {
     _isLoading = true;
@@ -48,6 +57,8 @@ class MemoryController extends ChangeNotifier {
       final response = await _repository.getMemories();
       if (response.success && response.data != null) {
         _memories = response.data!;
+        // Sort by memory date descending (newest first)
+        _memories.sort((a, b) => b.memoryDate.compareTo(a.memoryDate));
       } else {
         _errorMessage = response.message ?? 'Failed to load memories';
       }
@@ -62,15 +73,25 @@ class MemoryController extends ChangeNotifier {
   // Pick image from camera
   Future<void> pickImageFromCamera() async {
     try {
-      final XFile? image = await _picker.pickImage(
-        source: ImageSource.camera,
-        maxWidth: 1920,
-        maxHeight: 1080,
-        imageQuality: 85,
+      final coupleId = await _storageService.getUserId();
+      if (coupleId == null) {
+        _errorMessage = 'User not found';
+        notifyListeners();
+        return;
+      }
+
+      // Take photo and upload to Cloudinary
+      final response = await _imageUploadService.takePhotoAndUploadChatImage(
+        coupleId,
       );
 
-      if (image != null) {
-        _selectedImage = File(image.path);
+      if (response != null && response.secureUrl.isNotEmpty) {
+        // Create a temporary file to show preview
+        // (we don't need the actual file since we have the URL)
+        _selectedImage = null; // Clear previous selection
+        notifyListeners();
+      } else {
+        _errorMessage = 'Failed to upload image';
         notifyListeners();
       }
     } catch (e) {
@@ -82,15 +103,24 @@ class MemoryController extends ChangeNotifier {
   // Pick image from gallery
   Future<void> pickImageFromGallery() async {
     try {
-      final XFile? image = await _picker.pickImage(
-        source: ImageSource.gallery,
-        maxWidth: 1920,
-        maxHeight: 1080,
-        imageQuality: 85,
+      final coupleId = await _storageService.getUserId();
+      if (coupleId == null) {
+        _errorMessage = 'User not found';
+        notifyListeners();
+        return;
+      }
+
+      // Pick and upload to Cloudinary
+      final response = await _imageUploadService.pickAndUploadMemoryImage(
+        coupleId,
       );
 
-      if (image != null) {
-        _selectedImage = File(image.path);
+      if (response != null && response.secureUrl.isNotEmpty) {
+        // Store the cloudinary URL temporarily
+        _selectedImage = null; // Clear previous selection
+        notifyListeners();
+      } else {
+        _errorMessage = 'Failed to upload image';
         notifyListeners();
       }
     } catch (e) {
@@ -99,13 +129,38 @@ class MemoryController extends ChangeNotifier {
     }
   }
 
+  // Upload image and return URL
+  Future<String?> uploadImageToCloudinary(File imageFile) async {
+    try {
+      final coupleId = await _storageService.getUserId();
+      if (coupleId == null) {
+        _errorMessage = 'User not found';
+        notifyListeners();
+        return null;
+      }
+
+      final response = await _imageUploadService.pickAndUploadMemoryImage(
+        coupleId,
+      );
+
+      if (response != null && response.secureUrl.isNotEmpty) {
+        return response.secureUrl;
+      }
+      return null;
+    } catch (e) {
+      debugPrint('Upload error: $e');
+      return null;
+    }
+  }
+
   // Create memory
   Future<bool> createMemory({
     required String title,
     required String description,
-    List<String>? tags,
+    required String imageUrl,
+    DateTime? memoryDate,
   }) async {
-    if (_selectedImage == null) {
+    if (imageUrl.isEmpty) {
       _errorMessage = 'Please select an image';
       notifyListeners();
       return false;
@@ -122,20 +177,16 @@ class MemoryController extends ChangeNotifier {
     notifyListeners();
 
     try {
-      // Convert image to base64
-      final bytes = await _selectedImage!.readAsBytes();
-      final base64Image = base64Encode(bytes);
-
       final request = CreateMemoryRequest(
         title: title,
         description: description,
-        imageBase64: base64Image,
+        imageUrl: imageUrl,
+        memoryDate: memoryDate ?? DateTime.now(),
       );
 
       final response = await _repository.createMemory(request);
 
       if (response.success && response.data != null) {
-        // Reload memories instead of inserting to avoid duplicates
         await loadMemories();
         _selectedImage = null;
         _isLoading = false;
@@ -155,15 +206,63 @@ class MemoryController extends ChangeNotifier {
     }
   }
 
+  // Update memory
+  Future<bool> updateMemory({
+    required int memoryId,
+    required String title,
+    required String description,
+    String? imageUrl,
+    DateTime? memoryDate,
+  }) async {
+    if (title.isEmpty || description.isEmpty) {
+      _errorMessage = 'Title and description are required';
+      notifyListeners();
+      return false;
+    }
+
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final request = UpdateMemoryRequest(
+        title: title,
+        description: description,
+        imageUrl: imageUrl,
+        memoryDate: memoryDate ?? _editingMemory?.memoryDate ?? DateTime.now(),
+      );
+
+      final response = await _repository.updateMemory(memoryId, request);
+
+      if (response.success) {
+        await loadMemories();
+        _selectedImage = null;
+        _editingMemory = null;
+        _isLoading = false;
+        notifyListeners();
+        return true;
+      } else {
+        _errorMessage = response.message ?? 'Failed to update memory';
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      }
+    } catch (e) {
+      _errorMessage = 'An error occurred while updating memory';
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
   // Delete memory
-  Future<bool> deleteMemory(String memoryId) async {
+  Future<bool> deleteMemory(int memoryId) async {
     _isLoading = true;
     notifyListeners();
 
     try {
       final response = await _repository.deleteMemory(memoryId);
       if (response.success) {
-        // Reload memories instead of removing locally
         await loadMemories();
         _isLoading = false;
         notifyListeners();
@@ -185,9 +284,22 @@ class MemoryController extends ChangeNotifier {
   // Get today's anniversary memories
   Future<List<Memory>> getTodayMemories() async {
     try {
+      // Check if we've already shown the reminder today
+      final today = DateTime.now().toIso8601String().split('T')[0];
+      if (_lastShownDate == today) {
+        return [];
+      }
+
       final response = await _repository.getTodayMemories();
       if (response.success && response.data != null) {
-        return response.data!;
+        final todayMemories = response.data!;
+
+        // Mark as shown for today
+        if (todayMemories.isNotEmpty) {
+          _lastShownDate = today;
+        }
+
+        return todayMemories;
       }
       return [];
     } catch (e) {
@@ -195,51 +307,10 @@ class MemoryController extends ChangeNotifier {
     }
   }
 
-  // Update memory
-  Future<bool> updateMemory({
-    required String memoryId,
-    required String title,
-    required String description,
-    String? imageBase64,
-    List<String>? tags,
-  }) async {
-    if (title.isEmpty || description.isEmpty) {
-      _errorMessage = 'Title and description are required';
-      notifyListeners();
-      return false;
-    }
-
-    _isLoading = true;
-    _errorMessage = null;
+  // Mark anniversary reminder as viewed for today
+  void markAnniversaryViewed() {
+    final today = DateTime.now().toIso8601String().split('T')[0];
+    _lastShownDate = today;
     notifyListeners();
-
-    try {
-      final response = await _repository.updateMemory(
-        memoryId: memoryId,
-        title: title,
-        description: description,
-        imageBase64: imageBase64,
-        tags: tags,
-      );
-
-      if (response.success) {
-        await loadMemories();
-        _selectedImage = null;
-        _editingMemory = null;
-        _isLoading = false;
-        notifyListeners();
-        return true;
-      } else {
-        _errorMessage = response.message ?? 'Failed to update memory';
-        _isLoading = false;
-        notifyListeners();
-        return false;
-      }
-    } catch (e) {
-      _errorMessage = 'An error occurred while updating memory';
-      _isLoading = false;
-      notifyListeners();
-      return false;
-    }
   }
 }
