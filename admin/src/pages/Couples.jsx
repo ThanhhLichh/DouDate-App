@@ -1,28 +1,37 @@
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState, useMemo } from "react";
 import { getCouples, breakCouple } from "../api/admin.couples";
+import Pagination from "../components/Pagination";
 import "./Couples.css";
 
 export default function Couples() {
   const [couples, setCouples] = useState([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(null);
+
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+
   const navigate = useNavigate();
 
-
-  // 🔍 search + filter
+  // 🔍 filter (trên page hiện tại)
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all"); // all | active | ended
 
+  const LIMIT = 10;
+  const totalPages = Math.ceil(total / LIMIT);
+
   useEffect(() => {
-    loadCouples();
+    loadCouples(1);
   }, []);
 
-  async function loadCouples() {
+  async function loadCouples(p = 1) {
+    setLoading(true);
     try {
-      const data = await getCouples();
-      const sorted = [...data].sort((a, b) => a.id - b.id);
-      setCouples(sorted);
+      const res = await getCouples(p, LIMIT);
+      setCouples(res.items);
+      setTotal(res.total);
+      setPage(p);
     } catch (err) {
       console.error(err);
       alert("Không tải được danh sách couple");
@@ -50,24 +59,21 @@ export default function Couples() {
     }
   }
 
-  // 🔥 FILTER LOGIC
-const filteredCouples = useMemo(() => {
-  return couples.filter((c) => {
-    // 🔍 chỉ search theo ID couple
-    const matchSearch =
-      search === "" || String(c.id).includes(search);
+  // 🔥 FILTER LOGIC (trên page hiện tại)
+  const filteredCouples = useMemo(() => {
+    return couples.filter((c) => {
+      const matchSearch =
+        search === "" || String(c.id).includes(search);
 
-    // 🔎 filter theo trạng thái
-    const isEnded = Boolean(c.end_date);
-    const matchStatus =
-      statusFilter === "all" ||
-      (statusFilter === "active" && !isEnded) ||
-      (statusFilter === "ended" && isEnded);
+      const isEnded = Boolean(c.end_date);
+      const matchStatus =
+        statusFilter === "all" ||
+        (statusFilter === "active" && !isEnded) ||
+        (statusFilter === "ended" && isEnded);
 
-    return matchSearch && matchStatus;
-  });
-}, [couples, search, statusFilter]);
-
+      return matchSearch && matchStatus;
+    });
+  }, [couples, search, statusFilter]);
 
   if (loading) {
     return <div className="couples-loading">Loading couples...</div>;
@@ -77,11 +83,11 @@ const filteredCouples = useMemo(() => {
     <div className="couples-page">
       <h1 className="couples-title">Couples</h1>
 
-      {/* 🔍 SEARCH + FILTER */}
+      {/* SEARCH + FILTER */}
       <div className="couples-toolbar">
         <input
           type="text"
-          placeholder="Search by couple id ..."
+          placeholder="Search by couple id..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="couples-search"
@@ -127,13 +133,17 @@ const filteredCouples = useMemo(() => {
                   <div className="action-group">
                     <button
                       className="action-btn view"
-                      onClick={() => navigate(`/messages?coupleId=${c.id}`)}
+                      onClick={() =>
+                        navigate(`/messages?coupleId=${c.id}`)
+                      }
                     >
                       View Messages
                     </button>
 
                     {c.end_date ? (
-                      <span className="status status-ended">Ended</span>
+                      <span className="status status-ended">
+                        Ended
+                      </span>
                     ) : (
                       <button
                         className="action-btn break"
@@ -145,7 +155,6 @@ const filteredCouples = useMemo(() => {
                     )}
                   </div>
                 </td>
-
               </tr>
             ))}
           </tbody>
@@ -155,6 +164,13 @@ const filteredCouples = useMemo(() => {
           <div className="couples-empty">No couples found</div>
         )}
       </div>
+
+      {/* PAGINATION (DÙNG CHUNG) */}
+      <Pagination
+        page={page}
+        totalPages={totalPages}
+        onPageChange={(p) => loadCouples(p)}
+      />
     </div>
   );
 }

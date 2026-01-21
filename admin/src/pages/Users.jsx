@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
 import { getUsers, updateUserStatus } from "../api/admin.users";
+import Pagination from "../components/Pagination";
 import "./Users.css";
 
 export default function Users() {
@@ -7,19 +8,27 @@ export default function Users() {
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(null);
 
-  // 🔍 search + filter state
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+
+  // 🔍 search + filter (trên page hiện tại)
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all"); // all | active | banned
+  const [statusFilter, setStatusFilter] = useState("all");
+
+  const LIMIT = 10;
+  const totalPages = Math.ceil(total / LIMIT);
 
   useEffect(() => {
-    loadUsers();
+    loadUsers(1);
   }, []);
 
-  async function loadUsers() {
+  async function loadUsers(p = 1) {
+    setLoading(true);
     try {
-      const data = await getUsers();
-      const sorted = [...data].sort((a, b) => a.id - b.id);
-      setUsers(sorted);
+      const res = await getUsers(p, LIMIT);
+      setUsers(res.items);
+      setTotal(res.total);
+      setPage(p);
     } catch (err) {
       console.error(err);
       alert("Không tải được danh sách user");
@@ -35,14 +44,14 @@ export default function Users() {
       setUsers((prev) =>
         prev.map((u) => (u.id === user.id ? updated : u))
       );
-    } catch (err) {
+    } catch {
       alert("Thao tác thất bại");
     } finally {
       setActionLoading(null);
     }
   }
 
-  // 🔥 FILTER LOGIC (search + status)
+  // 🔍 FILTER (chỉ trong page hiện tại – chuẩn admin)
   const filteredUsers = useMemo(() => {
     return users.filter((u) => {
       const keyword = search.toLowerCase();
@@ -68,7 +77,7 @@ export default function Users() {
     <div className="users-page">
       <h1 className="users-title">Users</h1>
 
-      {/* 🔍 SEARCH + FILTER */}
+      {/* SEARCH + FILTER */}
       <div className="users-toolbar">
         <input
           type="text"
@@ -146,6 +155,13 @@ export default function Users() {
           <div className="users-empty">No users found</div>
         )}
       </div>
+
+      {/* PAGINATION (DÙNG CHUNG) */}
+      <Pagination
+        page={page}
+        totalPages={totalPages}
+        onPageChange={(p) => loadUsers(p)}
+      />
     </div>
   );
 }
