@@ -1,13 +1,32 @@
 from sqlalchemy.orm import Session
 from models.user import User
 
-def get_all_users(db: Session):
-    return (
+
+def get_users_paginated(
+    db: Session,
+    page: int = 1,
+    limit: int = 10,
+):
+    offset = (page - 1) * limit
+
+    query = (
         db.query(User)
         .filter(User.role == "user")
-        .order_by(User.created_at.desc())
+    )
+
+    total = query.count()
+
+    items = (
+        query
+        .order_by(User.id.asc())   # 👈 ID nhỏ → lớn
+        .offset(offset)
+        .limit(limit)
         .all()
     )
+
+
+    return items, total
+
 
 
 def update_user_status(db: Session, user_id: int, is_active: bool):

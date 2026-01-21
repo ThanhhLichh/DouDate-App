@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 from datetime import datetime
+from typing import List
 
 class AdminUserOut(BaseModel):
     id: int
@@ -11,6 +12,13 @@ class AdminUserOut(BaseModel):
     model_config = {
         "from_attributes": True
     }
+
+
+class AdminUserPage(BaseModel):
+    items: List[AdminUserOut]
+    total: int
+    page: int
+    limit: int
 
 
 class UpdateUserStatus(BaseModel):

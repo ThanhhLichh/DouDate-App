@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 from datetime import datetime, date
+from typing import List
 
 class AdminCoupleOut(BaseModel):
     id: int
@@ -17,3 +18,10 @@ class AdminCoupleOut(BaseModel):
     model_config = {
         "from_attributes": True
     }
+
+
+class AdminCouplePage(BaseModel):
+    items: List[AdminCoupleOut]
+    total: int
+    page: int
+    limit: int

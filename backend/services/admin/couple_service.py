@@ -2,12 +2,26 @@ from sqlalchemy.orm import Session
 from models.couple import Couple
 from datetime import datetime
 
-def get_all_couples(db: Session):
-    return (
-        db.query(Couple)
-        .order_by(Couple.id.asc())
+def get_couples_paginated(
+    db: Session,
+    page: int = 1,
+    limit: int = 10,
+):
+    offset = (page - 1) * limit
+
+    query = db.query(Couple)
+
+    total = query.count()
+
+    items = (
+        query
+        .order_by(Couple.id.asc())   #  ID nhỏ → lớn
+        .offset(offset)
+        .limit(limit)
         .all()
     )
+
+    return items, total
 
 def break_couple(db: Session, couple_id: int):
     couple = (
