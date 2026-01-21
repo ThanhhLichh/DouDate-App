@@ -7,6 +7,8 @@ from core.security import get_current_user_id
 
 from models.memory import Memory
 from models.couple import Couple
+from datetime import date
+
 from schemas.memory import MemoryCreate, MemoryResponse, MemoryUpdate
 
 router = APIRouter(
@@ -90,6 +92,45 @@ def get_memories(
 
 
     return memories
+
+
+@router.get(
+    "/today",
+    response_model=list[MemoryResponse],
+)
+def get_memories_today(
+    db: Session = Depends(get_db),
+    user_id: int = Depends(get_current_user_id),
+):
+    today = date.today()
+
+    couple = (
+        db.query(Couple)
+        .filter(
+            or_(
+                Couple.user1_id == user_id,
+                Couple.user2_id == user_id,
+            ),
+            Couple.end_date.is_(None),
+        )
+        .first()
+    )
+
+    if not couple:
+        return []
+
+    memories = (
+        db.query(Memory)
+        .filter(
+            Memory.couple_id == couple.id,
+            Memory.memory_date == today,
+        )
+        .order_by(Memory.created_at.desc())
+        .all()
+    )
+
+    return memories
+
 
 
 @router.put(
