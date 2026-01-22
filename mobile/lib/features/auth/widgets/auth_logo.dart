@@ -10,7 +10,7 @@ class AuthLogo extends StatelessWidget {
   Widget build(BuildContext context) {
     return Image.asset(
       imagePath,
-      height: context.hp(context.isMobile ? 20 : 18),
+      height: context.hp(context.isMobile ? 18 : 16),
     );
   }
 }

@@ -231,3 +231,12 @@ class Couple {
     'start_date': startDate,
   };
 }
+
+// Google Login Request
+class GoogleLoginRequest {
+  final String idToken;
+
+  GoogleLoginRequest({required this.idToken});
+
+  Map<String, dynamic> toJson() => {'id_token': idToken};
+}

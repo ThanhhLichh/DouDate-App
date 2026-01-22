@@ -13,7 +13,7 @@ class AuthTitle extends StatelessWidget {
     return Text(
       title,
       style: TextStyle(
-        fontSize: context.sp(AppDimensions.fontXXL),
+        fontSize: context.sp(AppDimensions.fontXL),
         fontWeight: FontWeight.bold,
         color: color,
       ),

@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import '../../../core/services/storage_service.dart';
 import '../models/auth_models.dart';
 import '../repository/auth_repository.dart';
+import '../services/google_auth_service.dart';
 import '../../../core/constants/app_constants.dart';
 
 class AuthController extends ChangeNotifier {
   final StorageService _storageService = StorageService();
   final AuthRepository _authRepository = AuthRepository();
+  final GoogleAuthService _googleAuthService = GoogleAuthService();
 
   bool _isLoading = false;
   bool _isPasswordVisible = false;
@@ -85,6 +87,59 @@ class AuthController extends ChangeNotifier {
       }
     } catch (e) {
       _errorMessage = ErrorMessages.networkError;
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  // Login with Google
+  Future<bool> loginWithGoogle() async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      // Sign in with Google and get Firebase ID Token
+      final String? idToken = await _googleAuthService.signInWithGoogle();
+
+      if (idToken == null) {
+        _errorMessage = 'Google sign in cancelled';
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      }
+
+      // Send ID Token to backend
+      final request = GoogleLoginRequest(idToken: idToken);
+      final response = await _authRepository.googleLogin(request);
+
+      if (response.success && response.data != null) {
+        // Save tokens (same as normal login)
+        await _storageService.saveTokenWithExpiry(response.data!.accessToken);
+        await _storageService.saveTokenWithExpiry(
+          response.data!.refreshToken,
+          isRefreshToken: true,
+        );
+        await _storageService.saveRefreshToken(response.data!.refreshToken);
+
+        // Load user data
+        final userJson = await _storageService.getUser();
+        if (userJson != null) {
+          _currentUser = User.fromJson(userJson);
+        }
+
+        _isLoading = false;
+        notifyListeners();
+        return true;
+      } else {
+        _errorMessage = response.message ?? 'Google login failed';
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      }
+    } catch (e) {
+      _errorMessage = 'Google login error: ${e.toString()}';
       _isLoading = false;
       notifyListeners();
       return false;

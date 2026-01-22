@@ -43,6 +43,44 @@ class AuthRepository {
     }
   }
 
+  // Google Login
+  Future<ApiResponse<AuthResponse>> googleLogin(
+    GoogleLoginRequest request,
+  ) async {
+    try {
+      final response = await _apiClient.post<AuthResponse>(
+        ApiConfig.googleLogin,
+        data: request.toJson(),
+        fromJsonT: (json) => AuthResponse.fromJson(json),
+      );
+
+      if (response.success && response.data != null) {
+        final storageService = StorageService();
+
+        await storageService.saveTokenWithExpiry(response.data!.accessToken);
+        await storageService.saveTokenWithExpiry(
+          response.data!.refreshToken,
+          isRefreshToken: true,
+        );
+
+        final userResponse = await _apiClient.get<User>(
+          ApiConfig.getUser,
+          token: response.data!.accessToken,
+          fromJsonT: (json) => User.fromJson(json),
+        );
+
+        if (userResponse.success && userResponse.data != null) {
+          await storageService.saveUserId(userResponse.data!.id);
+          print("Đã lưu UserId thành công: ${userResponse.data!.id}");
+        }
+      }
+
+      return response;
+    } catch (e) {
+      return ApiResponse.error(message: 'Google login failed: ${e.toString()}');
+    }
+  }
+
   // Check couple status
   Future<ApiResponse<CoupleCheckResponse>> checkCouple(String token) async {
     try {

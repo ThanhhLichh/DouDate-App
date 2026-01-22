@@ -85,6 +85,11 @@ dependencies:
   cloudinary_api: ^1.1.1
   cloudinary_url_gen: ^1.8.0
 
+  # Firebase
+  firebase_core: ^4.2.1
+  firebase_auth: ^6.1.2
+  google_sign_in: ^6.1.6
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -109,6 +114,7 @@ flutter:
 
   assets:
     - assets/images/
+    - assets/icons/
 
   # To add assets to your application, add an assets section, like this:
   # assets:

@@ -56,6 +56,9 @@ class ApiConfig {
   static String deleteMemory(int memoryId) => '/memories/$memoryId';
   static const String todayMemories = '/memories/today';
 
+  // Google OAuth Endpoints
+  static const String googleLogin = '/auth/google';
+
   // Timeouts
   static const int connectTimeout = 30000; // 30 seconds
   static const int receiveTimeout = 30000;
