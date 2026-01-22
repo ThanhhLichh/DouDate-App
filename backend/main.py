@@ -16,6 +16,8 @@ from routers.admin import messages as admin_messages
 from routers.admin import dashboard as admin_dashboard
 from routers import auth_password
 from routers.admin import memories as admin_memories
+from core.firebase import init_firebase
+from routers import auth_google
 
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -24,6 +26,8 @@ app = FastAPI(
     title=settings.APP_NAME,
     debug=settings.DEBUG,
 )
+
+init_firebase()
 
 app.include_router(auth_router)
 app.include_router(qr_router)
@@ -46,6 +50,9 @@ app.include_router(admin_dashboard.router)
 app.include_router(auth_password.router)
 
 app.include_router(admin_memories.router)
+
+
+app.include_router(auth_google.router)
 
 
 @app.get("/health")

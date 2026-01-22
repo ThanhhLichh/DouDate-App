@@ -18,7 +18,8 @@ class User(Base):
     id = Column(BigInteger, primary_key=True, index=True)
 
     email = Column(String(255), unique=True, nullable=False)
-    password_hash = Column(String(255), nullable=False)
+    password_hash = Column(String(255), nullable=True)
+
     full_name = Column(String(120), nullable=False)
 
     avatar_url = Column(String(1024), nullable=True)
@@ -27,6 +28,12 @@ class User(Base):
 
     role = Column(Enum("user", "admin"), default="user", nullable=False)
     is_active = Column(Boolean, default=True, nullable=False)
+
+    auth_provider = Column(
+        Enum("local", "google"),
+        nullable=False,
+        default="local",
+    )
 
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(

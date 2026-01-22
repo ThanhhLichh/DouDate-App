@@ -22,6 +22,8 @@ class Settings(BaseSettings):
     SMTP_PASSWORD: str
     MAIL_FROM: str
 
+    FIREBASE_CREDENTIALS: str
+
     @property
     def DATABASE_URL(self) -> str:
         password = self.DB_PASSWORD or ""

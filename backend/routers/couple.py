@@ -137,10 +137,7 @@ def get_couple_stats(
 
 
 # break couple endpoint 
-@router.post(
-    "/break",
-    status_code=status.HTTP_200_OK,
-)
+
 @router.post("/break", status_code=status.HTTP_200_OK)
 async def break_couple(
     db: Session = Depends(get_db),

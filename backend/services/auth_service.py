@@ -143,8 +143,15 @@ def login_user(
 ):
     user = db.query(User).filter(User.email == email).first()
 
-    if not user or not verify_password(password, user.password_hash):
+    if not user:
         raise ValueError("Invalid email or password")
+
+    if user.auth_provider != "local":
+        raise ValueError("Please login with Google")
+
+    if not verify_password(password, user.password_hash):
+        raise ValueError("Invalid email or password")
+
 
     if not user.is_active:
         raise ValueError("User is inactive")

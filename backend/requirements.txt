@@ -22,3 +22,5 @@ python-dateutil
 
 email-validator
 
+firebase-admin
+

@@ -34,6 +34,12 @@ def forgot_password(
     user = db.query(User).filter(User.email == data.email).first()
 
     if user:
+
+        if user.auth_provider == "google":
+            return {
+                "message": "This account uses Google Sign-In. Please login with Google."
+            }
+        
         otp = generate_otp()
         token = create_otp_token(data.email, otp)
         send_otp_email(data.email, otp)
@@ -80,6 +86,12 @@ def reset_password(
     user = db.query(User).filter(User.email == email).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
+    
+    if user.auth_provider == "google":
+        raise HTTPException(
+            status_code=400,
+            detail="This account uses Google Sign-In. Password cannot be reset."
+        )
 
     user.password_hash = hash_password(data.new_password)
     db.commit()
