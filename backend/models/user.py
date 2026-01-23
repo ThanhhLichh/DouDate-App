@@ -11,6 +11,8 @@ from sqlalchemy.sql import func
 
 from models.base import Base
 
+from sqlalchemy import String
+
 
 class User(Base):
     __tablename__ = "users"
@@ -28,6 +30,8 @@ class User(Base):
 
     role = Column(Enum("user", "admin"), default="user", nullable=False)
     is_active = Column(Boolean, default=True, nullable=False)
+
+    fcm_token = Column(String(255), nullable=True)
 
     auth_provider = Column(
         Enum("local", "google"),

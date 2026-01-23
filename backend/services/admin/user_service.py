@@ -18,7 +18,7 @@ def get_users_paginated(
 
     items = (
         query
-        .order_by(User.id.asc())   # 👈 ID nhỏ → lớn
+        .order_by(User.id.asc())   #  ID nhỏ → lớn
         .offset(offset)
         .limit(limit)
         .all()

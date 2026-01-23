@@ -210,7 +210,7 @@ async def respond_qr(db: Session, token: str, user_id: int, action: str):
     db.commit()
     db.refresh(couple)
 
-    # 🔔 realtime notify cho người tạo QR
+    #  realtime notify cho người tạo QR
     partner = db.query(User).filter(User.id == user_id).first()
 
     await qr_manager.notify_qr_scanned(

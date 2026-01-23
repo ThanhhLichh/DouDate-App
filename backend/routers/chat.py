@@ -12,6 +12,10 @@ from typing import Dict, List
 from fastapi import WebSocket
 from starlette.websockets import WebSocketState
 
+from models.user import User
+from services.push_service import send_push_notification
+
+
 import json
 from starlette.websockets import WebSocketDisconnect
 
@@ -113,11 +117,11 @@ def get_user_id_from_token(token: str) -> int | None:
             algorithms=["HS256"],
         )
 
-        # 1️⃣ Check subject (app)
+        # 1️ Check subject (app)
         if payload.get("sub") != "doudate-app":
             return None
 
-        # 2️⃣ Lấy user_id ĐÚNG CHỖ
+        # 2️ Lấy user_id ĐÚNG CHỖ
         user_id = payload.get("user_id")
         if not user_id:
             return None
@@ -211,6 +215,30 @@ async def chat_ws(
                 thumbnail_url=thumbnail_url,
                 type=msg_type,
             )
+
+            # xác định người nhận
+            if couple.user1_id == user_id:
+                receiver_id = couple.user2_id
+            else:
+                receiver_id = couple.user1_id
+
+            # kiểm tra người nhận có online không
+            online_set = manager.online_users.get(couple_id, set())
+
+            if receiver_id not in online_set:
+                receiver = db.query(User).filter(User.id == receiver_id).first()
+
+                if receiver and receiver.fcm_token:
+                    send_push_notification(
+                        fcm_token=receiver.fcm_token,
+                        title="Tin nhắn mới",
+                        body=content or "Bạn có tin nhắn mới",
+                        data={
+                            "type": "chat",
+                            "couple_id": str(couple_id),
+                            "sender_id": str(user_id),
+                        }
+                    )
 
             await manager.broadcast(
                 couple_id,

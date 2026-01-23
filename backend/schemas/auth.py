@@ -9,7 +9,6 @@ class RegisterRequest(BaseModel):
     @field_validator("password")
     @classmethod
     def validate_password(cls, v: str):
-        # bcrypt chỉ cho tối đa 72 BYTES (không phải 72 ký tự)
         if len(v.encode("utf-8")) > 72:
             raise ValueError("Password must be at most 72 bytes")
         if len(v) < 6:

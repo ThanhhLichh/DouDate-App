@@ -18,14 +18,14 @@ def get_current_user_id(
             algorithms=["HS256"],
         )
 
-        # 1️⃣ Kiểm tra subject (app)
+        #  Kiểm tra subject (app)
         if payload.get("sub") != "doudate-app":
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid token subject",
             )
 
-        # 2️⃣ Lấy user_id ĐÚNG CHỖ
+        #  Lấy user_id đúng chỗ
         user_id = payload.get("user_id")
         if not user_id:
             raise HTTPException(

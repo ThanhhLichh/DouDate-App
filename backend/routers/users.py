@@ -7,6 +7,8 @@ from core.security import get_current_user_id
 
 from models.user import User
 from models.couple import Couple
+from schemas.user_fcm import SaveFCMTokenRequest
+
 
 from schemas.user import (
     UserPublic,
@@ -105,3 +107,21 @@ def get_user(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     return user
+
+
+@router.post("/fcm-token")
+def save_fcm_token(
+    data: SaveFCMTokenRequest,
+    db: Session = Depends(get_db),
+    user_id: int = Depends(get_current_user_id),
+):
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    user.fcm_token = data.fcm_token
+    db.commit()
+
+    return {
+        "success": True
+    }
