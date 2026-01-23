@@ -7,7 +7,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'core/providers/dashboard_theme_provider.dart';
 import 'core/services/theme_storage_service.dart';
 import 'core/services/image_storage_service.dart';
-import 'core/services/storage_service.dart';
+import 'core/services/auth_state_manager.dart';
 
 // Features
 import 'features/auth/controllers/auth_controller.dart';
@@ -26,9 +26,11 @@ Future<void> main() async {
   // Initialize Firebase
   await Firebase.initializeApp();
 
-  // Check login token
-  final storageService = StorageService();
-  final String? token = await storageService.getToken();
+  final authStateManager = AuthStateManager();
+
+  debugPrint('App starting - Initializing auth...');
+  await authStateManager.initializeAuth();
+  debugPrint('Auth initialized');
 
   // Init SharedPreferences
   final prefs = await SharedPreferences.getInstance();
@@ -40,8 +42,16 @@ Future<void> main() async {
   runApp(
     MultiProvider(
       providers: [
+        ChangeNotifierProvider.value(value: authStateManager),
+
         // Auth
-        ChangeNotifierProvider(create: (_) => AuthController()),
+        ChangeNotifierProvider(
+          create: (context) {
+            final controller = AuthController();
+            controller.setAuthStateManager(authStateManager);
+            return controller;
+          },
+        ),
 
         // Home
         ChangeNotifierProvider(create: (_) => HomeController()),
@@ -87,15 +97,15 @@ Future<void> main() async {
           ),
         ),
       ],
-      child: MyApp(isLoggedIn: token != null),
+      child: MyApp(authStateManager: authStateManager),
     ),
   );
 }
 
 class MyApp extends StatelessWidget {
-  final bool isLoggedIn;
+  final AuthStateManager authStateManager;
 
-  const MyApp({super.key, required this.isLoggedIn});
+  const MyApp({super.key, required this.authStateManager});
 
   @override
   Widget build(BuildContext context) {
@@ -118,8 +128,7 @@ class MyApp extends StatelessWidget {
             ),
           ),
 
-          // Router
-          routerConfig: AppRouter.router,
+          routerConfig: AppRouter.createRouter(authStateManager),
         );
       },
     );

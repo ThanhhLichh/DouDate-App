@@ -4,12 +4,14 @@ import '../models/auth_models.dart';
 import '../repository/auth_repository.dart';
 import '../services/google_auth_service.dart';
 import '../../../core/constants/app_constants.dart';
+import '../../../core/services/auth_state_manager.dart';
 
 class AuthController extends ChangeNotifier {
   final StorageService _storageService = StorageService();
   final AuthRepository _authRepository = AuthRepository();
   final GoogleAuthService _googleAuthService = GoogleAuthService();
 
+  AuthStateManager? _authStateManager;
   bool _isLoading = false;
   bool _isPasswordVisible = false;
   User? _currentUser;
@@ -27,6 +29,10 @@ class AuthController extends ChangeNotifier {
   String? get otpToken => _otpToken;
   String? get resetToken => _resetToken;
   String? get userEmail => _userEmail;
+
+  void setAuthStateManager(AuthStateManager manager) {
+    _authStateManager = manager;
+  }
 
   void togglePasswordVisibility() {
     _isPasswordVisible = !_isPasswordVisible;
@@ -70,17 +76,28 @@ class AuthController extends ChangeNotifier {
         );
         await _storageService.saveRefreshToken(response.data!.refreshToken);
 
-        // Load user data từ storage
+        // Load user data tá»« storage
         final userJson = await _storageService.getUser();
         if (userJson != null) {
           _currentUser = User.fromJson(userJson);
+        }
+
+        // Check couple status vÃ  update AuthStateManager
+        final coupleStatus = await checkCoupleStatus();
+        final hasCouple = coupleStatus?.hasCouple ?? false;
+
+        if (_authStateManager != null && _currentUser != null) {
+          await _authStateManager!.updateAuthAfterLogin(
+            _currentUser!,
+            hasCouple,
+          );
         }
 
         _isLoading = false;
         notifyListeners();
         return true;
       } else {
-        _errorMessage = response.message ?? 'Login failed';
+        _errorMessage = ErrorMessages.networkError;
         _isLoading = false;
         notifyListeners();
         return false;
@@ -115,7 +132,7 @@ class AuthController extends ChangeNotifier {
       final response = await _authRepository.googleLogin(request);
 
       if (response.success && response.data != null) {
-        // Save tokens (same as normal login)
+        // Save tokens
         await _storageService.saveTokenWithExpiry(response.data!.accessToken);
         await _storageService.saveTokenWithExpiry(
           response.data!.refreshToken,
@@ -127,6 +144,16 @@ class AuthController extends ChangeNotifier {
         final userJson = await _storageService.getUser();
         if (userJson != null) {
           _currentUser = User.fromJson(userJson);
+        }
+
+        final coupleStatus = await checkCoupleStatus();
+        final hasCouple = coupleStatus?.hasCouple ?? false;
+
+        if (_authStateManager != null && _currentUser != null) {
+          await _authStateManager!.updateAuthAfterLogin(
+            _currentUser!,
+            hasCouple,
+          );
         }
 
         _isLoading = false;
@@ -473,6 +500,10 @@ class AuthController extends ChangeNotifier {
       await _storageService.deleteUser();
       _currentUser = null;
 
+      if (_authStateManager != null) {
+        await _authStateManager!.logout();
+      }
+
       _isLoading = false;
       notifyListeners();
       return true;
@@ -483,6 +514,10 @@ class AuthController extends ChangeNotifier {
       await _storageService.deleteRefreshToken();
       await _storageService.deleteUser();
       _currentUser = null;
+
+      if (_authStateManager != null) {
+        await _authStateManager!.logout();
+      }
 
       _isLoading = false;
       notifyListeners();

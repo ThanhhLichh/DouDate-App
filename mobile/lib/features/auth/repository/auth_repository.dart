@@ -32,6 +32,7 @@ class AuthRepository {
 
         // Lưu userId vào storage
         if (userResponse.success && userResponse.data != null) {
+          await storageService.saveUser(userResponse.data!.toJson());
           await storageService.saveUserId(userResponse.data!.id);
           print("Đã lưu UserId thành công: ${userResponse.data!.id}");
         }
@@ -70,6 +71,7 @@ class AuthRepository {
         );
 
         if (userResponse.success && userResponse.data != null) {
+          await storageService.saveUser(userResponse.data!.toJson());
           await storageService.saveUserId(userResponse.data!.id);
           print("Đã lưu UserId thành công: ${userResponse.data!.id}");
         }

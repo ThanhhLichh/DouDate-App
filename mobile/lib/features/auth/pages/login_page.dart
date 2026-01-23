@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:go_router/go_router.dart';
 import '../controllers/auth_controller.dart';
 import '../../../core/theme/app_color.dart';
 import '../../../core/widgets/custom_text_field.dart';
@@ -42,18 +41,14 @@ class _LoginPageState extends State<LoginPage> {
     if (!mounted) return;
 
     if (success) {
-      final coupleStatus = await authController.checkCoupleStatus();
-
-      if (!mounted) return;
-
-      if (coupleStatus != null && coupleStatus.hasCouple) {
-        context.go('/home-couple');
-      } else {
-        context.go('/home-single');
-      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Login successful!'),
+          backgroundColor: Colors.green,
+          duration: Duration(seconds: 1),
+        ),
+      );
     } else {
-      if (!mounted) return;
-
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(authController.errorMessage ?? 'Login failed'),
@@ -71,18 +66,14 @@ class _LoginPageState extends State<LoginPage> {
     if (!mounted) return;
 
     if (success) {
-      final coupleStatus = await authController.checkCoupleStatus();
-
-      if (!mounted) return;
-
-      if (coupleStatus != null && coupleStatus.hasCouple) {
-        context.go('/home-couple');
-      } else {
-        context.go('/home-single');
-      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Google login successful!'),
+          backgroundColor: Colors.green,
+          duration: Duration(seconds: 1),
+        ),
+      );
     } else {
-      if (!mounted) return;
-
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(authController.errorMessage ?? 'Google login failed'),

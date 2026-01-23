@@ -119,7 +119,13 @@ class _HomeSinglePageState extends State<HomeSinglePage> {
       await authController.logout();
 
       if (mounted) {
-        context.go('/login');
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Logged out successfully!'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 1),
+          ),
+        );
       }
     } catch (e) {
       if (mounted) {

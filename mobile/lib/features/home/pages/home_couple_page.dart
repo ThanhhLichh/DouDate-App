@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import '../../auth/controllers/auth_controller.dart';
 import 'package:provider/provider.dart';
 import '../controllers/home_controller.dart';
@@ -12,6 +11,7 @@ import '../widgets/couple/home_error_state.dart';
 import '../../../core/utils/responsive_helper.dart';
 import '../../../core/constants/app_dimensions.dart';
 import '../../../core/providers/dashboard_theme_provider.dart';
+import '../../../core/services/auth_state_manager.dart';
 import '../../settings/theme_settings_page.dart';
 import '../models/home_models.dart';
 import '../../chat/pages/chat_page.dart';
@@ -27,7 +27,6 @@ class HomeCouplePage extends StatefulWidget {
 
 class _HomePageState extends State<HomeCouplePage> {
   int _selectedIndex = 0;
-  bool _isCheckingCouple = false;
 
   @override
   void initState() {
@@ -58,14 +57,12 @@ class _HomePageState extends State<HomeCouplePage> {
   }
 
   Future<bool> _verifyCoupleConnection() async {
-    if (_isCheckingCouple) return true;
-
-    setState(() {
-      _isCheckingCouple = true;
-    });
-
     try {
       final authController = context.read<AuthController>();
+      final homeController = context.read<HomeController>();
+      final authStateManager = context.read<AuthStateManager>();
+      final messenger = ScaffoldMessenger.of(context);
+
       final coupleStatus = await authController.checkCoupleStatus();
 
       if (!mounted) return false;
@@ -75,19 +72,18 @@ class _HomePageState extends State<HomeCouplePage> {
           'HomeCouplePage: Couple connection broken - navigating to single page',
         );
 
-        await context.read<HomeController>().cleanupCoupleData();
+        await homeController.cleanupCoupleData();
+        await authStateManager.recheckCoupleStatus();
 
         if (!mounted) return false;
 
-        ScaffoldMessenger.of(context).showSnackBar(
+        messenger.showSnackBar(
           const SnackBar(
             content: Text('Your connection has been ended'),
             backgroundColor: Colors.orange,
             duration: Duration(seconds: 3),
           ),
         );
-
-        context.go('/home-single');
 
         return false;
       }
@@ -98,9 +94,7 @@ class _HomePageState extends State<HomeCouplePage> {
       return true;
     } finally {
       if (mounted) {
-        setState(() {
-          _isCheckingCouple = false;
-        });
+        setState(() {});
       }
     }
   }
