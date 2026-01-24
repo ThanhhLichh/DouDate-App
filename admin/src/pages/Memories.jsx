@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { getMemoriesByCouple } from "../api/admin.memories";
+import { getMemoriesByCouple, deleteMemory } from "../api/admin.memories";
 import Pagination from "../components/Pagination";
 import "./Memories.css";
 
@@ -9,6 +9,7 @@ export default function Memories() {
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [actionLoading, setActionLoading] = useState(null);
 
   const LIMIT = 10;
   const totalPages = Math.ceil(total / LIMIT);
@@ -26,6 +27,22 @@ export default function Memories() {
       alert("Không tải được memories");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleDelete(memoryId) {
+    const ok = window.confirm("Xoá memory này?");
+    if (!ok) return;
+
+    setActionLoading(memoryId);
+    try {
+      await deleteMemory(memoryId);
+      setMemories((prev) => prev.filter((m) => m.id !== memoryId));
+      setTotal((t) => t - 1);
+    } catch {
+      alert("Xoá memory thất bại");
+    } finally {
+      setActionLoading(null);
     }
   }
 
@@ -65,6 +82,15 @@ export default function Memories() {
                   ? `Memory date: ${m.memory_date}`
                   : new Date(m.created_at).toLocaleString()}
               </span>
+
+              {/* 🔥 DELETE BUTTON */}
+              <button
+                className="memory-delete-btn"
+                disabled={actionLoading === m.id}
+                onClick={() => handleDelete(m.id)}
+              >
+                {actionLoading === m.id ? "..." : "Delete"}
+              </button>
             </div>
           </div>
         ))}
@@ -74,7 +100,7 @@ export default function Memories() {
         )}
       </div>
 
-      {/* PAGINATION (DÙNG CHUNG) */}
+      {/* PAGINATION */}
       <Pagination
         page={page}
         totalPages={totalPages}

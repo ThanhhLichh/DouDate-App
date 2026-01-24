@@ -7,3 +7,8 @@ export async function getMemoriesByCouple(coupleId, page = 1, limit = 10) {
   );
   return res.data; // { items, total, page, limit }
 }
+
+export async function deleteMemory(memoryId) {
+  const res = await axios.delete(`/admin/memories/${memoryId}`);
+  return res.data; // { success: true }
+}
