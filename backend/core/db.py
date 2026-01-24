@@ -6,6 +6,13 @@ from core.config import settings
 engine = create_engine(
     settings.DATABASE_URL,
     pool_pre_ping=True,
+    pool_size=5,
+    max_overflow=0,
+    connect_args={
+        "ssl": {
+            "check_hostname": False
+        }
+    }
 )
 
 SessionLocal = sessionmaker(
