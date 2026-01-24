@@ -22,7 +22,9 @@ class Settings(BaseSettings):
     SMTP_PASSWORD: str
     MAIL_FROM: str
 
-    FIREBASE_CREDENTIALS: str
+    FIREBASE_CREDENTIALS: Optional[str] = None
+    FIREBASE_CREDENTIALS_JSON: Optional[str] = None
+
 
     @property
     def DATABASE_URL(self) -> str:
