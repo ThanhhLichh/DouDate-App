@@ -25,3 +25,18 @@ def get_memories_by_couple(
     )
 
     return items, total
+
+
+def delete_memory(db: Session, memory_id: int):
+    memory = (
+        db.query(Memory)
+        .filter(Memory.id == memory_id)
+        .first()
+    )
+
+    if not memory:
+        return None
+
+    db.delete(memory)   # xóa trực tiếp đối tượng memory
+    db.commit()
+    return True

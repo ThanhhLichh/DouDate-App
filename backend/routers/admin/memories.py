@@ -5,6 +5,7 @@ from core.db import get_db
 from schemas.admin.memory import AdminMemoryPage
 from services.admin.memory_service import get_memories_by_couple
 from services.auth_service import get_current_user
+from services.admin.memory_service import delete_memory
 
 router = APIRouter(
     prefix="/admin",
@@ -33,3 +34,18 @@ def list_memories_by_couple(
         "page": page,
         "limit": limit,
     }
+
+@router.delete("/memories/{memory_id}")
+def admin_delete_memory(
+    memory_id: int,
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user),
+):
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403)
+
+    success = delete_memory(db, memory_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Memory not found")
+
+    return {"success": True}
