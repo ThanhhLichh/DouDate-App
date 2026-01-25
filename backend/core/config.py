@@ -16,6 +16,11 @@ class Settings(BaseSettings):
     DB_PASSWORD: Optional[str] = Field(None, env="DB_PASSWORD")
     DB_NAME: str = Field(..., env="DB_NAME")
 
+    EMAILJS_SERVICE_ID: str = Field(..., env="EMAILJS_SERVICE_ID")
+    EMAILJS_TEMPLATE_ID: str = Field(..., env="EMAILJS_TEMPLATE_ID")
+    EMAILJS_PUBLIC_KEY: str = Field(..., env="EMAILJS_PUBLIC_KEY")
+    EMAILJS_PRIVATE_KEY: str = Field(..., env="EMAILJS_PRIVATE_KEY")
+
     SMTP_HOST: str
     SMTP_PORT: int
     SMTP_USER: str
