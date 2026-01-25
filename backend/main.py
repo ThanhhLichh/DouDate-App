@@ -27,6 +27,18 @@ app = FastAPI(
     debug=settings.DEBUG,
 )
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "https://dou-date-app.vercel.app",              # Admin FE (Vercel)
+        "http://localhost:5173",                        # Dev local (Vite)
+        "http://localhost:3000",
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 init_firebase()
 
 app.include_router(auth_router)
@@ -59,14 +71,4 @@ app.include_router(auth_google.router)
 def health_check():
     return {"status": "ok"}
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[
-        "https://dou-date-app.vercel.app",              # Admin FE (Vercel)
-        "http://localhost:5173",                        # Dev local (Vite)
-        "http://localhost:3000",
-    ],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+
