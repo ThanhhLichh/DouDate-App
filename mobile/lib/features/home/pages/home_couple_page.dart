@@ -19,7 +19,9 @@ import '../../memory/pages/memories_page.dart';
 import '../../profile/pages/settings_page.dart';
 
 class HomeCouplePage extends StatefulWidget {
-  const HomeCouplePage({super.key});
+  final bool openChat;
+
+  const HomeCouplePage({super.key, this.openChat = false});
 
   @override
   State<HomeCouplePage> createState() => _HomePageState();
@@ -27,12 +29,19 @@ class HomeCouplePage extends StatefulWidget {
 
 class _HomePageState extends State<HomeCouplePage> {
   int _selectedIndex = 0;
+  bool _hasNavigatedToChat = false;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _initializePage();
+
+      // Auto navigate to chat nếu từ notification
+      if (widget.openChat && !_hasNavigatedToChat) {
+        _hasNavigatedToChat = true;
+        _navigateToChat();
+      }
     });
   }
 
@@ -97,6 +106,15 @@ class _HomePageState extends State<HomeCouplePage> {
         setState(() {});
       }
     }
+  }
+
+  // Navigate to Chat Page
+  void _navigateToChat() {
+    debugPrint('Auto-navigating to chat from notification');
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const ChatPage()),
+    );
   }
 
   @override

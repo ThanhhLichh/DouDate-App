@@ -136,7 +136,13 @@ class AppRouter {
         GoRoute(
           path: '/home-couple',
           name: 'home-couple',
-          builder: (context, state) => const HomeCouplePage(),
+          builder: (context, state) {
+            // 🔔 Nhận extra data từ FCM navigation
+            final extra = state.extra as Map<String, dynamic>?;
+            final openChat = extra?['openChat'] as bool? ?? false;
+
+            return HomeCouplePage(openChat: openChat);
+          },
         ),
       ],
 

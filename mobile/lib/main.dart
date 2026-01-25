@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:go_router/go_router.dart';
 
 // Core
 import 'core/providers/dashboard_theme_provider.dart';
 import 'core/services/theme_storage_service.dart';
 import 'core/services/image_storage_service.dart';
 import 'core/services/auth_state_manager.dart';
+import 'core/services/fcm_service.dart';
 
 // Features
 import 'features/auth/controllers/auth_controller.dart';
@@ -26,6 +28,10 @@ Future<void> main() async {
   // Initialize Firebase
   await Firebase.initializeApp();
 
+  // Initialize FCM
+  final fcmService = FCMService();
+  await fcmService.initialize();
+
   final authStateManager = AuthStateManager();
 
   debugPrint('App starting - Initializing auth...');
@@ -42,6 +48,9 @@ Future<void> main() async {
   runApp(
     MultiProvider(
       providers: [
+        // Provide FCMService
+        Provider.value(value: fcmService),
+
         ChangeNotifierProvider.value(value: authStateManager),
 
         // Auth
@@ -102,10 +111,38 @@ Future<void> main() async {
   );
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   final AuthStateManager authStateManager;
 
   const MyApp({super.key, required this.authStateManager});
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  late final GoRouter _router;
+
+  @override
+  void initState() {
+    super.initState();
+
+    // Create router
+    _router = AppRouter.createRouter(widget.authStateManager);
+
+    // Setup FCM navigation callback
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final fcmService = context.read<FCMService>();
+      fcmService.onNotificationTap = (data) {
+        debugPrint('FCM notification tapped: $data');
+
+        if (data['type'] == 'chat') {
+          // Navigate to chat via home-couple
+          _router.go('/home-couple', extra: {'openChat': true});
+        }
+      };
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -128,7 +165,7 @@ class MyApp extends StatelessWidget {
             ),
           ),
 
-          routerConfig: AppRouter.createRouter(authStateManager),
+          routerConfig: _router,
         );
       },
     );

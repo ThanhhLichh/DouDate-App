@@ -88,6 +88,8 @@ dependencies:
   # Firebase
   firebase_core: ^4.2.1
   firebase_auth: ^6.1.2
+  firebase_messaging: ^16.0.2
+  flutter_local_notifications: ^19.4.2
   google_sign_in: ^6.1.6
 
 dev_dependencies:

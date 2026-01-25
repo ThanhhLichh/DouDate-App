@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mobile/core/services/fcm_service.dart';
 import '../../../core/services/storage_service.dart';
 import '../models/auth_models.dart';
 import '../repository/auth_repository.dart';
@@ -76,13 +77,13 @@ class AuthController extends ChangeNotifier {
         );
         await _storageService.saveRefreshToken(response.data!.refreshToken);
 
-        // Load user data tá»« storage
+        // Load user data from storage
         final userJson = await _storageService.getUser();
         if (userJson != null) {
           _currentUser = User.fromJson(userJson);
         }
 
-        // Check couple status vÃ  update AuthStateManager
+        // Check couple status and update AuthStateManager
         final coupleStatus = await checkCoupleStatus();
         final hasCouple = coupleStatus?.hasCouple ?? false;
 
@@ -92,6 +93,8 @@ class AuthController extends ChangeNotifier {
             hasCouple,
           );
         }
+
+        await _sendFCMTokenToBackend();
 
         _isLoading = false;
         notifyListeners();
@@ -155,6 +158,8 @@ class AuthController extends ChangeNotifier {
             hasCouple,
           );
         }
+
+        await _sendFCMTokenToBackend();
 
         _isLoading = false;
         notifyListeners();
@@ -495,6 +500,9 @@ class AuthController extends ChangeNotifier {
         }
       }
 
+      await FCMService().deleteToken();
+      debugPrint('FCM token deleted on logout');
+
       await _storageService.deleteToken();
       await _storageService.deleteRefreshToken();
       await _storageService.deleteUser();
@@ -509,6 +517,9 @@ class AuthController extends ChangeNotifier {
       return true;
     } catch (e) {
       debugPrint('Logout error: $e');
+
+      await FCMService().deleteToken();
+      debugPrint('FCM token deleted on logout (error case)');
 
       await _storageService.deleteToken();
       await _storageService.deleteRefreshToken();
@@ -554,5 +565,28 @@ class AuthController extends ChangeNotifier {
     );
 
     return hasUppercase && hasLowercase && hasDigits && hasSpecialCharacters;
+  }
+
+  // Send FCM token to backend
+  Future<void> _sendFCMTokenToBackend() async {
+    try {
+      final fcmService = FCMService();
+      final fcmToken = fcmService.fcmToken;
+
+      if (fcmToken != null) {
+        debugPrint('Sending FCM token to backend...');
+        final response = await _authRepository.saveFCMToken(fcmToken);
+
+        if (response.success) {
+          debugPrint('FCM token saved successfully');
+        } else {
+          debugPrint('Failed to save FCM token: ${response.message}');
+        }
+      } else {
+        debugPrint('No FCM token available');
+      }
+    } catch (e) {
+      debugPrint('Error sending FCM token: $e');
+    }
   }
 }

@@ -215,4 +215,27 @@ class AuthRepository {
       );
     }
   }
+
+  // Save FCM Token
+  Future<ApiResponse<void>> saveFCMToken(String fcmToken) async {
+    try {
+      final token = await StorageService().getToken();
+      if (token == null) {
+        return ApiResponse.error(message: 'No authentication token found');
+      }
+
+      final response = await _apiClient.post<void>(
+        ApiConfig.saveFCMToken,
+        token: token,
+        data: {'fcm_token': fcmToken},
+        fromJsonT: null,
+      );
+
+      return response;
+    } catch (e) {
+      return ApiResponse.error(
+        message: 'Failed to save FCM token: ${e.toString()}',
+      );
+    }
+  }
 }

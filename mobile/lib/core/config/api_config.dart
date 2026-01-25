@@ -21,6 +21,7 @@ class ApiConfig {
   // User Endpoints
   static const String getUser = '/users/me';
   static const String updateUser = '/users/me';
+  static const String saveFCMToken = '/users/fcm-token';
 
   // Couple Endpoints
   static const String checkCouple = '/couple/me';

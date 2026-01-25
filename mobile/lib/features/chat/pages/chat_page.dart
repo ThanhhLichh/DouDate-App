@@ -7,6 +7,7 @@ import '../widgets/chat/chat_input.dart';
 import '../widgets/chat/message_list.dart';
 import '../widgets/chat/chat_state_views.dart';
 import '../models/conversation_settings_models.dart';
+import '../../../core/services/fcm_service.dart';
 
 class ChatPage extends StatefulWidget {
   const ChatPage({super.key});
@@ -18,11 +19,17 @@ class ChatPage extends StatefulWidget {
 class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
   final ScrollController _scrollController = ScrollController();
   ChatController? _controller;
+  FCMService? _fcmService;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+
+    // Get FCM service và notify visibility
+    _fcmService = context.read<FCMService>();
+    _fcmService?.setChatPageVisibility(true);
+    debugPrint('Chat page opened - FCM notified');
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final chatController = context.read<ChatController>();
@@ -51,9 +58,15 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
     if (_controller != null) {
       if (state == AppLifecycleState.resumed) {
         _controller!.onScreenVisible();
+        // Notify FCM when app resumes
+        _fcmService?.setChatPageVisibility(true);
+        debugPrint('App resumed on chat page - FCM notified');
       } else if (state == AppLifecycleState.paused ||
           state == AppLifecycleState.inactive) {
         _controller!.onScreenHidden();
+        // Notify FCM when app goes background
+        _fcmService?.setChatPageVisibility(false);
+        debugPrint('App paused/inactive - FCM notified');
       }
     }
   }
@@ -63,6 +76,10 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
     debugPrint('ChatPage: DISPOSING');
     WidgetsBinding.instance.removeObserver(this);
     _scrollController.dispose();
+
+    // Notify FCM chat page hidden
+    _fcmService?.setChatPageVisibility(false);
+    debugPrint('Chat page closed - FCM notified');
 
     if (_controller != null) {
       debugPrint('ChatPage: Calling onScreenHidden');
