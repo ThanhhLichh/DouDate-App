@@ -130,3 +130,62 @@
   opacity: 0.6;
   cursor: not-allowed;
 }
+
+/* ========================= */
+/* ===== MEMORIES RWD ====== */
+/* ========================= */
+
+/* ===== TABLET ===== */
+@media (max-width: 1024px) {
+  .memories-list {
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  }
+}
+
+/* ===== MOBILE ===== */
+@media (max-width: 640px) {
+  /* Title */
+  .memories-page h1 {
+    font-size: 18px;
+    margin-bottom: 14px;
+  }
+
+  /* Toolbar */
+  .memories-toolbar {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .memories-toolbar input,
+  .memories-toolbar button {
+    width: 100%;
+  }
+
+  /* Grid */
+  .memories-list {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  /* Image */
+  .memory-item img {
+    height: 200px;
+  }
+
+  /* Text */
+  .memory-content strong {
+    font-size: 13px;
+  }
+
+  .memory-content p {
+    font-size: 13px;
+    -webkit-line-clamp: 4; /* mobile đọc nhiều hơn */
+  }
+
+  /* Delete button */
+  .memory-delete-btn {
+    align-self: stretch;
+    text-align: center;
+  }
+}
+

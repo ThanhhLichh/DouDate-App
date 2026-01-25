@@ -118,3 +118,63 @@
   font-size: 13px;
   margin-bottom: 14px;
 }
+
+
+/* ========================= */
+/* ===== LOGIN RWD ========= */
+/* ========================= */
+
+/* ===== TABLET ===== */
+@media (max-width: 768px) {
+  .login-card {
+    max-width: 380px;
+    padding: 32px 26px;
+  }
+}
+
+/* ===== MOBILE ===== */
+@media (max-width: 480px) {
+  .login-page {
+    padding: 16px; /* tránh sát mép màn hình */
+  }
+
+  .login-card {
+    max-width: 100%;
+    padding: 28px 20px;
+    border-radius: 14px;
+  }
+
+  /* Icon */
+  .admin-icon {
+    width: 56px;
+    height: 56px;
+    margin-bottom: 14px;
+  }
+
+  /* Title */
+  .login-card h2 {
+    font-size: 20px;
+  }
+
+  .login-card p {
+    font-size: 13px;
+    margin-bottom: 20px;
+  }
+
+  /* Inputs */
+  .login-card input {
+    padding: 12px 14px;
+    font-size: 14px;
+  }
+
+  /* Button */
+  .login-card button {
+    padding: 12px;
+    font-size: 14px;
+  }
+
+  /* Error */
+  .login-error {
+    font-size: 12px;
+  }
+}

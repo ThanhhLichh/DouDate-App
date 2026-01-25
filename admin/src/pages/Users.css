@@ -130,3 +130,59 @@
   cursor: pointer;
 }
 
+
+/* ========================= */
+/* ===== USERS RWD ========= */
+/* ========================= */
+
+/* ===== TABLET ===== */
+@media (max-width: 1024px) {
+  .users-table-wrap {
+    overflow-x: auto;
+  }
+
+  .users-table {
+    min-width: 720px; /* tránh table bị bóp */
+  }
+}
+
+/* ===== MOBILE ===== */
+@media (max-width: 640px) {
+  /* Title */
+  .users-title {
+    font-size: 18px;
+    margin-bottom: 14px;
+  }
+
+  /* Toolbar */
+  .users-toolbar {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .users-search,
+  .users-filter {
+    width: 100%;
+  }
+
+  /* Table */
+  .users-table-wrap {
+    overflow-x: auto;
+  }
+
+  .users-table {
+    min-width: 640px;
+  }
+
+  .users-table th,
+  .users-table td {
+    padding: 10px 12px;
+    font-size: 13px;
+  }
+
+  /* Action button */
+  .action-btn {
+    padding: 6px 12px;
+    font-size: 11px;
+  }
+}

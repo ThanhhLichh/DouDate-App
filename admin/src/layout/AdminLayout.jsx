@@ -1,4 +1,5 @@
 import { Outlet, NavLink, useNavigate } from "react-router-dom";
+import { useState } from "react";
 
 import { logoutAdmin } from "../auth/auth.service";
 import { jwtDecode } from "jwt-decode";
@@ -6,6 +7,7 @@ import "./AdminLayout.css";
 
 export default function AdminLayout() {
   const navigate = useNavigate();  
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const token = localStorage.getItem("admin_access_token");
   let adminName = "Admin";
@@ -28,10 +30,17 @@ export default function AdminLayout() {
   };
 
   return (
-    <div className="admin-root">
+    <div className={`admin-root ${sidebarOpen ? "sidebar-open" : ""}`}>
+
       {/* SIDEBAR */}
       <aside className="admin-sidebar">
-        <div className="sidebar-logo">
+        <NavLink
+  to="/"
+  end
+  className="sidebar-logo"
+  onClick={() => setSidebarOpen(false)}
+>
+
   <div className="logo-icon">
     <svg viewBox="0 0 24 24">
       <path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7l8-4z" />
@@ -43,31 +52,56 @@ export default function AdminLayout() {
     <span className="logo-text">DouDate</span>
     <span className="logo-sub">ADMIN</span>
   </div>
-</div>
+ </NavLink>
 
 
         <nav className="sidebar-nav">
-          <NavLink to="/" end className="nav-item">
+         <NavLink
+            to="/"
+            end
+            className="nav-item"
+            onClick={() => setSidebarOpen(false)}
+          >
             <DashboardIcon />
             <span>Dashboard</span>
           </NavLink>
 
-          <NavLink to="/users" className="nav-item">
+
+          <NavLink
+            to="/users"
+            className="nav-item"
+            onClick={() => setSidebarOpen(false)}
+          >
+
             <UsersIcon />
             <span>Users</span>
           </NavLink>
 
-          <NavLink to="/couples" className="nav-item">
+          <NavLink
+            to="/couples"
+            className="nav-item"
+            onClick={() => setSidebarOpen(false)}
+          >
             <CouplesIcon />
             <span>Couples</span>
           </NavLink>
 
-          <NavLink to="/messages" className="nav-item">
+          <NavLink
+            to="/messages"
+            className="nav-item"
+            onClick={() => setSidebarOpen(false)}
+          >
+
             <MessagesIcon />
             <span>Messages</span>
           </NavLink>
 
-          <NavLink to="/memories" className="nav-item">
+          <NavLink
+            to="/memories"
+            className="nav-item"
+            onClick={() => setSidebarOpen(false)}
+          >
+
             <MemoriesIcon />
             <span>Memories</span>
           </NavLink>
@@ -82,12 +116,27 @@ export default function AdminLayout() {
           
         </nav>
       </aside>
+      {sidebarOpen && (
+          <div
+            className="sidebar-overlay"
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
 
       {/* MAIN */}
       <div className="admin-main">
         {/* NAVBAR */}
         <header className="admin-navbar">
-          <span className="navbar-title">Admin Panel</span>
+        <button
+          className="menu-btn"
+          onClick={() => setSidebarOpen(v => !v)}
+
+        >
+          ☰
+        </button>
+
+        <span className="navbar-title">Admin Panel</span>
+
 
           <div className="navbar-right">
             <span className="admin-name">{adminName}</span>
@@ -97,6 +146,8 @@ export default function AdminLayout() {
 
           </div>
         </header>
+        
+
 
         {/* CONTENT */}
         <main className="admin-content">

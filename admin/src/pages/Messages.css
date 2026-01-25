@@ -166,3 +166,68 @@
   color: #64748b;
 }
 
+/* ========================= */
+/* ===== MESSAGES RWD ====== */
+/* ========================= */
+
+/* ===== TABLET ===== */
+@media (max-width: 1024px) {
+  .messages-grid {
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  }
+}
+
+/* ===== MOBILE ===== */
+@media (max-width: 640px) {
+  /* Title */
+  .messages-page h1 {
+    font-size: 18px;
+    margin-bottom: 14px;
+  }
+
+  /* Toolbar */
+  .messages-toolbar {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .messages-toolbar input,
+  .messages-toolbar button {
+    width: 100%;
+  }
+
+  /* Grid */
+  .messages-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  /* Message card */
+  .message-item {
+    padding: 12px;
+  }
+
+  .message-meta {
+    font-size: 10px;
+  }
+
+  .message-content {
+    font-size: 13px;
+  }
+
+  .message-content p {
+    max-height: none; /* mobile đọc full */
+  }
+
+  .message-content img {
+    max-height: 200px;
+  }
+
+  /* Delete button */
+  .delete-btn {
+    align-self: stretch;
+    text-align: center;
+  }
+}
+
+

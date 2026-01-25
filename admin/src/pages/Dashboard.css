@@ -146,3 +146,66 @@
   );
 }
 
+
+/* ========================= */
+/* ===== DASHBOARD RWD ===== */
+/* ========================= */
+
+/* ===== TABLET ===== */
+@media (max-width: 1024px) {
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .charts-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ===== MOBILE ===== */
+@media (max-width: 640px) {
+  /* Stats */
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .stat-card {
+    padding: 16px;
+  }
+
+  .stat-value {
+    font-size: 24px;
+  }
+
+  .stat-icon {
+    width: 40px;
+    height: 40px;
+  }
+
+  /* Charts */
+  .chart-box {
+    padding: 16px;
+  }
+
+  .chart-box h3 {
+    font-size: 15px;
+  }
+
+  /* Table */
+  .table-box {
+    padding: 16px;
+  }
+
+  .dashboard-table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+
+  .dashboard-table th,
+  .dashboard-table td {
+    padding: 10px 12px;
+    font-size: 13px;
+  }
+}
+
