@@ -1,21 +1,34 @@
-import smtplib
-from email.mime.text import MIMEText
-
-from core.config import settings
+import os
+import requests
 
 
 def send_otp_email(to_email: str, otp: str):
-    msg = MIMEText(
-        f"Mã OTP đặt lại mật khẩu của bạn là: {otp}\n"
-        f"Mã có hiệu lực trong 5 phút.",
-        "plain",
-        "utf-8",
+    api_key = os.getenv("RESEND_API_KEY")
+
+    # DEV fallback (nếu quên set env)
+    if not api_key:
+        print(f"[OTP DEV] {to_email} -> {otp}")
+        return
+
+    response = requests.post(
+        "https://api.resend.com/emails",
+        headers={
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+        },
+        json={
+            "from": os.getenv("MAIL_FROM", "no-reply@doudate.app"),
+            "to": [to_email],
+            "subject": "Reset password OTP",
+            "html": f"""
+                <h3>DouDate</h3>
+                <p>Mã OTP đặt lại mật khẩu của bạn là:</p>
+                <h2>{otp}</h2>
+                <p>Mã có hiệu lực trong 5 phút.</p>
+            """,
+        },
+        timeout=10,
     )
 
-    msg["Subject"] = "Reset password OTP"
-    msg["From"] = settings.MAIL_FROM
-    msg["To"] = to_email
-
-    with smtplib.SMTP_SSL(settings.SMTP_HOST, settings.SMTP_PORT) as server:
-        server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
-        server.send_message(msg)
+    if response.status_code >= 400:
+        print("Resend error:", response.text)
