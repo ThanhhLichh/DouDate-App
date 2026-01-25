@@ -1,12 +1,9 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import '../../core/providers/dashboard_theme_provider.dart';
 import '../../core/theme/theme_presets.dart';
 import '../../core/theme/dashboard_theme.dart';
-// import '../../core/utils/color_validator.dart';
 
 class ThemeSettingsPage extends StatefulWidget {
   const ThemeSettingsPage({super.key});
@@ -16,7 +13,6 @@ class ThemeSettingsPage extends StatefulWidget {
 }
 
 class _ThemeSettingsPageState extends State<ThemeSettingsPage> {
-  final ImagePicker _picker = ImagePicker();
   bool _showAdvancedOptions = false;
 
   @override
@@ -55,13 +51,6 @@ class _ThemeSettingsPageState extends State<ThemeSettingsPage> {
                   _buildSectionTitle('Theme Presets'),
                   const SizedBox(height: 12),
                   _buildThemePresets(context, themeProvider),
-
-                  const SizedBox(height: 32),
-
-                  // PHASE 2: Custom Background
-                  _buildSectionTitle('Custom Background'),
-                  const SizedBox(height: 12),
-                  _buildBackgroundSection(context, themeProvider),
 
                   const SizedBox(height: 32),
 
@@ -253,62 +242,6 @@ class _ThemeSettingsPageState extends State<ThemeSettingsPage> {
         color: color,
         shape: BoxShape.circle,
         border: Border.all(color: Colors.grey.shade300),
-      ),
-    );
-  }
-
-  // PHASE 2: Background Image Section
-  Widget _buildBackgroundSection(
-    BuildContext context,
-    DashboardThemeProvider provider,
-  ) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Couple Background Image',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-            ),
-            const SizedBox(height: 12),
-            FutureBuilder<bool>(
-              future: provider.hasCustomBackground(),
-              builder: (context, snapshot) {
-                final hasCustom = snapshot.data ?? false;
-
-                return Row(
-                  children: [
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed: () => _pickAndUploadBackground(provider),
-                        icon: const Icon(Icons.upload),
-                        label: Text(
-                          hasCustom ? 'Change Image' : 'Upload Image',
-                        ),
-                      ),
-                    ),
-                    if (hasCustom) ...[
-                      const SizedBox(width: 12),
-                      IconButton(
-                        onPressed: () => _removeBackground(context, provider),
-                        icon: const Icon(Icons.delete),
-                        color: Colors.red,
-                        tooltip: 'Remove custom background',
-                      ),
-                    ],
-                  ],
-                );
-              },
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Upload a custom background for your couple card',
-              style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -556,60 +489,6 @@ class _ThemeSettingsPageState extends State<ThemeSettingsPage> {
         ],
       ),
     );
-  }
-
-  // Background Image Picker
-  Future<void> _pickAndUploadBackground(DashboardThemeProvider provider) async {
-    final XFile? image = await _picker.pickImage(
-      source: ImageSource.gallery,
-      maxWidth: 1920,
-      maxHeight: 1920,
-      imageQuality: 85,
-    );
-
-    if (image != null) {
-      await provider.updateCoupleBackground(File(image.path));
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Background updated')));
-      }
-    }
-  }
-
-  Future<void> _removeBackground(
-    BuildContext context,
-    DashboardThemeProvider provider,
-  ) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Remove Background'),
-        content: const Text(
-          'Are you sure you want to remove the custom background?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Remove'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed == true) {
-      await provider.removeCoupleBackground();
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Background removed')));
-      }
-    }
   }
 
   Future<void> _showResetDialog(BuildContext context) async {

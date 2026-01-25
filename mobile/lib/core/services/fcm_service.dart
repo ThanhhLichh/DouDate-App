@@ -29,18 +29,18 @@ class FCMService {
   bool _isChatPageVisible = false;
   void setChatPageVisibility(bool visible) {
     _isChatPageVisible = visible;
-    debugPrint('🔔 FCM: Chat page visible = $visible');
+    debugPrint(' FCM: Chat page visible = $visible');
   }
 
   /// Initialize FCM
   Future<void> initialize() async {
     try {
-      debugPrint('🔔 FCM: Initializing...');
+      debugPrint(' FCM: Initializing...');
 
       // 1. Request permission
       final settings = await _requestPermission();
       if (settings.authorizationStatus != AuthorizationStatus.authorized) {
-        debugPrint('🔔 FCM: Permission denied');
+        debugPrint(' FCM: Permission denied');
         return;
       }
 
@@ -67,9 +67,9 @@ class FCMService {
       // 8. Handle notification tap (app was background)
       _handleNotificationTapBackground();
 
-      debugPrint('🔔 FCM: Initialized successfully');
+      debugPrint(' FCM: Initialized successfully');
     } catch (e) {
-      debugPrint('🔔 FCM: Initialization error: $e');
+      debugPrint(' FCM: Initialization error: $e');
     }
   }
 
@@ -81,7 +81,7 @@ class FCMService {
       sound: true,
       provisional: false,
     );
-    debugPrint('🔔 FCM: Permission status: ${settings.authorizationStatus}');
+    debugPrint(' FCM: Permission status: ${settings.authorizationStatus}');
     return settings;
   }
 
@@ -118,16 +118,16 @@ class FCMService {
         >()
         ?.createNotificationChannel(channel);
 
-    debugPrint('🔔 FCM: Local notifications setup complete');
+    debugPrint(' FCM: Local notifications setup complete');
   }
 
   /// Get FCM token
   Future<void> _getToken() async {
     try {
       _fcmToken = await _messaging.getToken();
-      debugPrint('🔔 FCM Token: $_fcmToken');
+      debugPrint(' FCM Token: $_fcmToken');
     } catch (e) {
-      debugPrint('🔔 FCM: Error getting token: $e');
+      debugPrint(' FCM: Error getting token: $e');
     }
   }
 
@@ -135,7 +135,7 @@ class FCMService {
   void _listenToTokenRefresh() {
     _messaging.onTokenRefresh.listen((newToken) {
       _fcmToken = newToken;
-      debugPrint('🔔 FCM: Token refreshed: $newToken');
+      debugPrint(' FCM: Token refreshed: $newToken');
       // TODO: Send new token to backend
     });
   }
@@ -152,7 +152,7 @@ class FCMService {
       if (!_isChatPageVisible) {
         _showLocalNotification(message);
       } else {
-        debugPrint('🔔 User is on chat page, NOT showing notification');
+        debugPrint(' User is on chat page, NOT showing notification');
       }
     });
   }
@@ -191,14 +191,14 @@ class FCMService {
       payload: message.data.toString(),
     );
 
-    debugPrint('🔔 Local notification shown');
+    debugPrint(' Local notification shown');
   }
 
   /// Handle notification tap (app terminated)
   void _handleNotificationTapTerminated() {
     _messaging.getInitialMessage().then((message) {
       if (message != null) {
-        debugPrint('🔔 App opened from terminated state via notification');
+        debugPrint(' App opened from terminated state via notification');
         _handleNotificationData(message.data);
       }
     });
@@ -207,14 +207,14 @@ class FCMService {
   /// Handle notification tap (app background)
   void _handleNotificationTapBackground() {
     FirebaseMessaging.onMessageOpenedApp.listen((message) {
-      debugPrint('🔔 App opened from background via notification');
+      debugPrint(' App opened from background via notification');
       _handleNotificationData(message.data);
     });
   }
 
   /// Handle notification tap (local notification)
   void _onNotificationTapped(NotificationResponse response) {
-    debugPrint('🔔 Local notification tapped');
+    debugPrint(' Local notification tapped');
     if (response.payload != null) {
       // Parse payload and navigate
       // For now, just trigger callback
@@ -224,7 +224,7 @@ class FCMService {
 
   /// Process notification data and navigate
   void _handleNotificationData(Map<String, dynamic> data) {
-    debugPrint('🔔 Processing notification data: $data');
+    debugPrint(' Processing notification data: $data');
 
     // Check if it's a chat notification
     if (data['type'] == 'chat') {
@@ -240,16 +240,16 @@ class FCMService {
   ) async {
     try {
       if (_fcmToken == null) {
-        debugPrint('🔔 FCM: No token available');
+        debugPrint(' FCM: No token available');
         return false;
       }
 
-      debugPrint('🔔 FCM: Sending token to backend...');
+      debugPrint(' FCM: Sending token to backend...');
       await apiCall(_fcmToken!);
-      debugPrint('🔔 FCM: Token sent successfully');
+      debugPrint(' FCM: Token sent successfully');
       return true;
     } catch (e) {
-      debugPrint('🔔 FCM: Error sending token: $e');
+      debugPrint(' FCM: Error sending token: $e');
       return false;
     }
   }
@@ -259,9 +259,9 @@ class FCMService {
     try {
       await _messaging.deleteToken();
       _fcmToken = null;
-      debugPrint('🔔 FCM: Token deleted');
+      debugPrint(' FCM: Token deleted');
     } catch (e) {
-      debugPrint('🔔 FCM: Error deleting token: $e');
+      debugPrint(' FCM: Error deleting token: $e');
     }
   }
 }

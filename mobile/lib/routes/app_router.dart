@@ -137,7 +137,7 @@ class AppRouter {
           path: '/home-couple',
           name: 'home-couple',
           builder: (context, state) {
-            // 🔔 Nhận extra data từ FCM navigation
+            // Nhận extra data từ FCM navigation
             final extra = state.extra as Map<String, dynamic>?;
             final openChat = extra?['openChat'] as bool? ?? false;
 
