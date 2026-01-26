@@ -188,4 +188,13 @@ flutter run
   <img src="https://dou-date-app.vercel.app/assets/screen3.png" alt="Home Screen" width="250" />
 </p>
 
+## 7. Thành viên thực hiện
+
+| Tên | Vai trò |
+|-----|--------|
+| [Bùi Thanh Lịch](https://github.com/ThanhhLichh) | Backend Developer |
+| [Phạm Minh Chí](https://github.com/ToilaChi) | Mobile App Developer |
+| [Phan Ngọc Hiếu](https://github.com/Hieu-0611) | Design |
+
+
 
