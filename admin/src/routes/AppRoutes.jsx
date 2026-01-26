@@ -1,5 +1,6 @@
 import { Routes, Route } from "react-router-dom";
 import Login from "../pages/Login";
+import Landing from "../pages/Landing";
 import Dashboard from "../pages/Dashboard";
 import Users from "../pages/Users";
 import AdminLayout from "../layout/AdminLayout";
@@ -11,8 +12,12 @@ import Memories from "../pages/Memories";
 export default function AppRoutes() {
   return (
     <Routes>
+
+      {/*  LANDING PAGE – PUBLIC */}
+      <Route path="/landing" element={<Landing />} />
       {/* LOGIN – KHÔNG LAYOUT */}
       <Route path="/login" element={<Login />} />
+      
 
       {/* ADMIN LAYOUT */}
       <Route
