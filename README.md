@@ -187,6 +187,11 @@ flutter run
   <img src="https://dou-date-app.vercel.app/assets/screen2.png" alt="Chat Screen" width="250" />
   <img src="https://dou-date-app.vercel.app/assets/screen3.png" alt="Home Screen" width="250" />
 </p>
+<p align="center">
+  <img src="https://dou-date-app.vercel.app/assets/Screenshot%202026-01-26%20211237.png" alt="Login Screen" width="250" />
+  <img src="https://dou-date-app.vercel.app/assets/Screenshot%202026-01-26%20211251.png" alt="Chat Screen" width="250" />
+  <img src="https://dou-date-app.vercel.app/assets/Screenshot%202026-01-26%20211302.png" alt="Home Screen" width="250" />
+</p>
 
 ## 7. Thành viên thực hiện
 
