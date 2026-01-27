@@ -12,6 +12,7 @@ from schemas.user import UserResponse
 from services.auth_service import (
     register_user,
     login_user,
+    login_admin,
     refresh_access_token,
     revoke_refresh_token,
 )
@@ -55,6 +56,24 @@ def register(data: RegisterRequest, db: Session = Depends(get_db)):
 def login(data: LoginRequest, db: Session = Depends(get_db)):
     try:
         tokens = login_user(
+            db=db,
+            email=data.email,
+            password=data.password,
+        )
+        return tokens
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=str(e),
+        )
+
+@router.post(
+    "/admin/login",
+    response_model=TokenResponse,
+)
+def admin_login(data: LoginRequest, db: Session = Depends(get_db)):
+    try:
+        tokens = login_admin(
             db=db,
             email=data.email,
             password=data.password,

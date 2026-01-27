@@ -155,6 +155,11 @@ def login_user(
 
     if not user.is_active:
         raise ValueError("User is inactive")
+    
+    if user.role != "user":
+        print("BLOCK ADMIN LOGIN:", user.email, user.role)
+        raise ValueError("Admin must login via web admin")
+
 
     access_token = create_access_token(user.id, user.role)
     refresh_token = create_refresh_token(db, user.id)
@@ -163,6 +168,38 @@ def login_user(
         "access_token": access_token,
         "refresh_token": refresh_token,
     }
+
+def login_admin(
+    db: Session,
+    email: str,
+    password: str,
+):
+    user = db.query(User).filter(User.email == email).first()
+
+    if not user:
+        raise ValueError("Invalid email or password")
+
+    if user.auth_provider != "local":
+        raise ValueError("Please login with Google")
+
+    if not verify_password(password, user.password_hash):
+        raise ValueError("Invalid email or password")
+
+    if not user.is_active:
+        raise ValueError("User is inactive")
+
+    #  CHỈ CHO ADMIN
+    if user.role != "admin":
+        raise ValueError("Not an admin account")
+
+    access_token = create_access_token(user.id, user.role)
+    refresh_token = create_refresh_token(db, user.id)
+
+    return {
+        "access_token": access_token,
+        "refresh_token": refresh_token,
+    }
+
 
 
 def get_current_user(
